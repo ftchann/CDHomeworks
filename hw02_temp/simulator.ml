@@ -7,6 +7,7 @@
 
 open X86
 
+
 (* simulator machine state -------------------------------------------------- *)
 
 let mem_bot = 0x400000L          (* lowest valid address *)
@@ -170,7 +171,10 @@ let getImm (i:imm) : int64 =
 (*side effect free*)
 let getvalue (m:mach) (opop:operand option) : int64 option =
   if opop = None then None else 
-  let op = match opop with Some x -> x in
+  let op = match opop with 
+    | Some x -> x
+    | _ -> failwith "impossible"
+  in
   let extractInt64 (v: (int option)) : int64 =
     begin match v with
       | None -> raise X86lite_segfault
@@ -205,8 +209,14 @@ let rec writeMem (m:mach) (l:sbyte list) (addr:int option): unit =
 (*not side effect free*)
 let writeTo (m:mach) (src_vo: int64 option) (desto:operand option) : unit =
   if src_vo = None then () else if desto = None then () else
-  let src_value = match src_vo with Some c -> c in
-  let dest = match desto with Some c -> c in
+  let src_value = match src_vo with 
+    | Some c -> c
+    | _ -> failwith "impossible"
+  in
+  let dest = match desto with 
+    | Some c -> c
+    | _ -> failwith "impossible"
+  in
   let src_sbytes = sbytes_of_int64 src_value in
 
   begin match dest with
@@ -216,12 +226,6 @@ let writeTo (m:mach) (src_vo: int64 option) (desto:operand option) : unit =
     | Ind3 (x, y) -> writeMem m src_sbytes (map_addr (Int64.add m.regs.(rind y) (getImm x)))
     | Imm x -> failwith "movq into Imm"
   end
-
-
-
-
-let debug_simulator = ref true
-
 
 let debugFlags (f:flags) : unit = begin
     Printf.printf "fo: %s fs: %s fz: %s\n" (string_of_bool f.fo)
@@ -253,25 +257,12 @@ let debugReg (r:regs) : unit = begin
     kappa rs2
   end
 
-let setFlags (op:opcode) (m:mach) (ans:int64) (x:int64) (y:int64) : unit =
+let setFlags (op:opcode) (m:mach) (ans:int64) (overflow:bool) : unit =
   begin
   let compans = Int64.compare ans 0L in
-  let compx = Int64.compare x 0L in
-  let compy = Int64.compare y 0L in
   if compans = 0 then m.flags.fz <- true else m.flags.fz <- false; 
   if compans < 0 then m.flags.fs <- true else m.flags.fs <- false;
-   begin match op with
-    | Addq -> if (compx < 0) && (compy < 0) && (compans > 0) || (compx > 0) && (compy > 0) && (compans < 0) then m.flags.fo <- true else m.flags.fo <- false;
-    | Subq -> if (compx < 0) && (compy > 0) then m.flags.fo <- true else m.flags.fo <- false;
-    | Imulq -> if (x = 0L || y == 0L) then m.flags.fo <- false else (if x = (Int64.div ans y) then m.flags.fo <- false else m.flags.fo <- true;);
-    | Xorq -> m.flags.fo <- false;
-    | Orq -> m.flags.fo <- false;
-    | Andq -> m.flags.fo <- false;
-    | Shlq -> if y = 1L && ((compx < 0) && (compans > 0) || (compx > 0) && (compans < 0)) then m.flags.fo <- true else m.flags.fo <- false;
-    | Sarq -> if y = 1L then m.flags.fo <- true else m.flags.fo <- false;
-    | Shrq -> if y = 1L && (compans < 0) then m.flags.fo <- true else m.flags.fo <- false;
-    | _ -> failwith "not arith"
-  end;
+  m.flags.fo <- overflow
   end
 
 (*Monad library*)
@@ -287,32 +278,35 @@ let return (x : 'a) : 'a option =
 let doarith (op:opcode) (m:mach) (x : int64 option) (y : int64 option) : int64 option = 
   x >>= fun a ->
   y >>= fun b ->
-  let result = begin match op with
-    | Addq -> Int64.add a b
-    | Subq -> Int64.sub a b
-    | Imulq -> Int64.mul a b
-    | Xorq -> Int64.logor a b
-    | Orq -> Int64.logor a b
-    | Andq -> Int64.logand a b
-    | Shlq -> Int64.shift_left a (Int64.to_int b)
-    | Sarq -> Int64.shift_right a (Int64.to_int b)
-    | Shrq -> Int64.shift_right_logical a (Int64.to_int b)
+  let t = begin match op with
+    | Addq -> Int64_overflow.add a b
+    | Subq -> Int64_overflow.sub a b  
+    | Imulq -> Int64_overflow.mul a b
+    | Xorq -> Int64_overflow.logxor a b
+    | Orq -> Int64_overflow.logor a b
+    | Andq -> Int64_overflow.logand a b
+    | Shlq -> Int64_overflow.shift_left a (Int64.to_int b)
+    | Sarq -> Int64_overflow.shift_right a (Int64.to_int b)
+    | Shrq -> Int64_overflow.shift_right_logical a (Int64.to_int b)
     | _ -> failwith "not arith"
   end in
-  let _ = setFlags op m result a b in
+  let result = t.value in
+  let _ = setFlags op m result t.overflow in
   return result
 let doarith1 (op:opcode) (m:mach) (x : int64 option) : int64 option = 
   x >>= fun a ->
-  let result = begin match op with
-  | Incq -> Int64.succ a
-  | Decq -> Int64.pred a
-  | Negq -> Int64.neg a
-  | Notq -> Int64.lognot a
+  let t = begin match op with
+  | Incq -> Int64_overflow.succ a
+  | Decq -> Int64_overflow.pred a
+  | Negq -> Int64_overflow.neg a
+  | Notq -> Int64_overflow.lognot a
   | _ -> failwith "not arith"
   end in
-  let _ = setFlags op m result a 0L in
+  let oldflags = m.flags in
+  let result = t.value in
+  let _ = setFlags op m result t.overflow in
+  if op = Notq then (m.flags.fo <- oldflags.fo; m.flags.fz <- oldflags.fz; m.flags.fs <- oldflags.fs);
   return result
-
 
 (* Simulates one step of the machine:
     - fetch the instruction at %rip
