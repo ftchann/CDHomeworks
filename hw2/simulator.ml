@@ -143,12 +143,190 @@ let sbytes_of_data : data -> sbyte list = function
 let debug_simulator = ref false
 
 (* Interpret a condition code with respect to the given flags. *)
-let interp_cnd {fo; fs; fz} : cnd -> bool = fun x -> failwith "interp_cnd unimplemented"
+let interp_cnd {fo; fs; fz} : cnd -> bool = fun x -> 
+    begin match x with
+    | Eq -> fz
+    | Neq -> not fz
+    | Gt -> (not fz) && (fs = fo)
+    | Lt ->  fs <> fo
+    | Le -> (fz) || (fs <> fo)
+    | Ge -> fs = fo
+  end
+
+
+let debugFlags (f:flags) : unit = begin
+    Printf.printf "fo: %s fs: %s fz: %s\n" (string_of_bool f.fo)
+    (string_of_bool f.fs) (string_of_bool f.fz);
+
+    Printf.printf "eq: %s neq: %s lt: %s le: %s gt: %s ge: %s\n\n"
+    (string_of_bool (interp_cnd f Eq))
+    (string_of_bool (interp_cnd f Neq))
+    (string_of_bool (interp_cnd f Lt))
+    (string_of_bool (interp_cnd f Le))
+    (string_of_bool (interp_cnd f Gt))
+    (string_of_bool (interp_cnd f Ge))
+
+  end
+
+let debugReg (r:regs) : unit = begin
+    let rs1 = [Rax;Rbx;Rcx;Rdx] in
+    let rs = [Rip;Rsi;Rdi;Rbp;Rsp] in
+    let rs2 = [R08;R09;R10;R11;R12;R13;R14;R15] in
+
+    let rec kappa l = 
+      begin match l with
+        | [] -> Printf.printf "\n"
+        | x::y -> Printf.printf ("%s: %s ") (string_of_reg x) (Int64.to_string r.(rind x));
+                  kappa y;
+      end in
+    kappa rs1;
+    kappa rs;
+    kappa rs2
+  end
+
 
 (* Maps an X86lite address into Some OCaml array index,
    or None if the address is not within the legal address space. *)
 let map_addr (addr:quad) : int option =
-failwith "map_addr not implemented"
+  if ((addr >= mem_top) || (addr < mem_bot)) then None
+  else Some (Int64.to_int (Int64.sub addr mem_bot))  
+
+
+let getImm (i:imm) : int64 = 
+  begin match i with
+    | Lit x -> x
+    | Lbl x -> failwith "Label shouldnt be here"
+  end
+
+
+(* get value of the operand *)
+let getValue (m:mach) (opop:operand option) : int64 option = 
+  (* No operand specified *)
+  if opop = None then None else
+  
+  (* extract the operand itself *)
+  let op = match opop with 
+    | Some x -> x
+    | _ -> failwith "opop impossible"
+  in
+  (* Helper function to extract from memory *)
+  let extractInt64 (v: (int option)) : int64 = 
+    begin match v with 
+      | None -> raise X86lite_segfault
+      | Some k -> 
+        begin 
+          (* basically read out the lsbytes and then convert them *)
+          let lsbytes = [m.mem.(k); m.mem.(k+1); m.mem.(k+2);
+            m.mem.(k+3); m.mem.(k+4); m.mem.(k+5); m.mem.(k+6); m.mem.(k+7)] in
+          int64_of_sbytes lsbytes
+        end
+    end in
+  
+  (* Actual matching *)
+  begin match op with
+    | Imm x -> Some (getImm x)
+    | Reg x -> Some (m.regs.(rind x))
+    | Ind1 x -> Some (extractInt64 (map_addr (getImm x)))
+    | Ind2 x -> Some (extractInt64 (map_addr m.regs.(rind x)))
+    | Ind3 (x, y) -> Some (extractInt64 (map_addr (Int64.add m.regs.(rind y) (getImm x))))
+  end
+
+let unwrap_int (x:int option) : int =
+  match x with
+    | None -> failwith "unwrap_int doesnt work..."
+    | Some x -> x
+  
+
+(* Simple instruction to facilitate writing to an memory location *)
+let rec writeMem (m:mach) (l:sbyte list) (addr: int option): unit = 
+  let adr = unwrap_int addr in
+  (* recursively writing the memory *)
+  begin match l with
+    | [] -> ()
+    | x::y -> (m.mem.(adr) <- x); (writeMem m y (Some (adr + 1)))
+  end
+  (* not side effect free *)
+
+
+(* takes an value of an operand and then writes to an destination specified by another operand *)
+let writeTo (m:mach) (src_vo: int64 option) (desto:operand option) : unit =
+  (* if nothing to do *)
+  if src_vo = None then () else if desto = None then () else
+  
+  let src_value = match src_vo with
+    | Some c -> c
+    | _ -> failwith "writeTo src_value impossible" in
+
+  let dest = match desto with
+    | Some c -> c
+    | _ -> failwith "writeTo dest impossible" in
+  
+  (* get the sbytes list *)
+  let src_sbytes = sbytes_of_int64 src_value in
+
+  begin match dest with
+    | Reg y -> m.regs.(rind y) <- src_value
+    | Ind1 x -> writeMem m src_sbytes (map_addr (getImm x))
+    | Ind2 x -> writeMem m src_sbytes (map_addr m.regs.(rind x))
+    | Ind3 (x, y) -> writeMem m src_sbytes (map_addr (Int64.add m.regs.(rind y) (getImm x)))
+    | Imm x -> failwith "Imm x in writeTo dest"
+  end
+
+
+(* Monad library *)
+let ( >>= ) (x: 'a option) (op : 'a -> 'a option) : 'a option =
+  match x with
+    | None -> None
+    | Some a -> op a
+
+
+
+(* simple wrapper function *)
+let return (x: 'a) : 'a option = Some x
+
+let setFlags (op:opcode) (m:mach) (ans:int64) (overflow:bool) : unit =
+  begin
+    let compans = Int64.compare ans 0L in
+    if compans = 0 then m.flags.fz <- true else m.flags.fz <- false;
+    if compans < 0 then m.flags.fs <- true else m.flags.fs <- false;
+    m.flags.fo <- overflow
+  end
+
+let doarith (op:opcode) (m:mach) (x:int64 option) (y:int64 option) : int64 option =
+  x >>= fun a -> 
+  y >>= fun b ->
+  let t = begin match op with
+    | Addq -> Int64_overflow.add a b
+    | Subq -> Int64_overflow.sub a b  
+    | Imulq -> Int64_overflow.mul a b
+    | Xorq -> Int64_overflow.logxor a b
+    | Orq -> Int64_overflow.logor a b
+    | Andq -> Int64_overflow.logand a b
+    | Shlq -> Int64_overflow.shift_left a (Int64.to_int b)
+    | Sarq -> Int64_overflow.shift_right a (Int64.to_int b)
+    | Shrq -> Int64_overflow.shift_right_logical a (Int64.to_int b)
+    | _ -> failwith "not arith"
+  end in
+  let result = t.value in
+  let _ = setFlags op m result t.overflow in
+  return result
+
+let doarith1 (op:opcode) (m:mach) (x : int64 option) : int64 option = 
+  x >>= fun a ->
+  let t = begin match op with
+  | Incq -> Int64_overflow.succ a
+  | Decq -> Int64_overflow.pred a
+  | Negq -> Int64_overflow.neg a
+  | Notq -> Int64_overflow.lognot a
+  | _ -> failwith "not arith"
+  end in
+  let oldflags = m.flags in
+  let result = t.value in
+  let _ = setFlags op m result t.overflow in
+  if op = Notq then (m.flags.fo <- oldflags.fo; m.flags.fz <- oldflags.fz; m.flags.fs <- oldflags.fs);
+  return result
+
+
 
 (* Simulates one step of the machine:
     - fetch the instruction at %rip
@@ -158,7 +336,107 @@ failwith "map_addr not implemented"
     - set the condition flags
 *)
 let step (m:mach) : unit =
-failwith "step unimplemented"
+  begin
+    (* fetch $rip *)
+    let ip = m.regs.(rind Rip) in
+
+    (* get instruction *)
+    let index = map_addr ip in
+    let instrdata = m.mem.(
+      begin match index with
+        | None -> raise X86lite_segfault
+        | Some x -> x
+      end
+    ) in
+
+    (* Debugging *)
+    if (!debug_simulator) then (
+      Printf.printf "\n";
+      begin match instrdata with
+        | InsB0 a -> Printf.printf "Instr: %s\n\n" (string_of_ins a)
+        | _ -> failwith "No Instr at this location"
+      end;
+      debugFlags m.flags;
+      debugReg m.regs;
+    );
+
+    (* Simulate Instruction *)
+    begin match instrdata with
+      (* actually an instruction *)
+      | InsB0 x -> (
+        let instr = x in
+
+        (* extract the operands *)
+        let op1 =
+          begin match instr with
+            | (_, x::_) -> Some x
+            | (_, []) -> None
+          end in
+        
+        let op2 =
+          begin match instr with
+            | (_, _x::y::_) -> Some y
+            | (_, _) -> None
+          end in
+        
+        (* extract the actual value of the operands *)
+        let op1v = getValue m op1 in
+        let op2v = getValue m op2 in
+
+        (* match on opcode *)
+        let opcode = 
+          match instr with
+            | (x, _) -> x in
+
+          begin match opcode with
+            | Movq -> writeTo m op1v op2
+            | Pushq -> ()
+            | Popq -> ()     
+            | Leaq -> ()     
+
+            | Incq -> writeTo m (doarith1 opcode m op1v) op1
+            | Decq -> writeTo m (doarith1 opcode m op1v) op1
+            | Negq -> writeTo m (doarith1 opcode m op1v) op1
+            | Notq -> writeTo m (doarith1 opcode m op1v) op1
+
+            | Addq -> writeTo m (doarith opcode m op2v op1v) op2
+            | Subq -> writeTo m (doarith opcode m op2v op1v) op2
+            | Imulq -> writeTo m (doarith opcode m op2v op1v) op2
+            | Xorq -> writeTo m (doarith opcode m op2v op1v) op2
+            | Orq -> writeTo m (doarith opcode m op2v op1v) op2
+            | Andq -> writeTo m (doarith opcode m op2v op1v) op2
+            | Shlq -> writeTo m (doarith opcode m op2v op1v) op2
+            | Sarq -> writeTo m (doarith opcode m op2v op1v) op2
+            | Shrq -> writeTo m (doarith opcode m op2v op1v) op2
+            | Jmp -> () 
+            | J x -> ()
+            | Cmpq -> ()
+            | Set x -> ()
+            | Callq 
+            | Retq -> ()
+          end
+        
+        
+      )
+      (* No instruction *)
+      | _ -> failwith "No Instr at this location"
+    end;
+
+    (* update instruction pointer *)
+    Array.set m.regs (rind Rip) (Int64.add 8L ip);
+
+    if (!debug_simulator) then (
+      Printf.printf "\nAfter:\n";
+      debugFlags m.flags;
+      debugReg m.regs;
+
+      Printf.printf "\n";
+    );
+
+
+
+  end
+  
 
 (* Runs the machine until the rip register reaches a designated
    memory address. Returns the contents of %rax when the 
