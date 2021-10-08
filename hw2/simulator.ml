@@ -7,6 +7,37 @@
 
 open X86
 
+module Overflow = struct
+let logor (x:int64) (y:int64) : Int64_overflow.t = 
+  let res = Int64.logor x y in
+  { value = res; overflow = false} 
+let lognot (x:int64) : Int64_overflow.t = 
+  let res = Int64.lognot x in
+  { value = res; overflow = false} 
+let logxor (x:int64) (y:int64) : Int64_overflow.t = 
+  let res = Int64.logxor x y in
+  { value = res; overflow = false} 
+let logand (x:int64) (y:int64) : Int64_overflow.t = 
+  let res = Int64.logand x y in
+  { value = res; overflow = false} 
+let shift_left (x:int64) (y:int) =
+  let ans = Int64.shift_left x y in
+  let compans = Int64.compare ans 0L in
+  let compx = Int64.compare x 0L in
+  let overflow = (y = 1) && ((compx < 0) && (compans > 0) || (compx > 0) && (compans < 0)) in
+  { Int64_overflow.value = ans; Int64_overflow.overflow = overflow} 
+let shift_right (x:int64) (y:int) =
+  let ans = Int64.shift_right x y in
+  let overflow = (y <> 1) in
+  { Int64_overflow.value = ans; Int64_overflow.overflow = overflow} 
+let shift_right_logical (x:int64) (y:int) =
+  let ans = Int64.shift_right_logical x y in
+  let compans = Int64.compare ans 0L in
+  let overflow = (y = 1) && (compans < 0) in
+  { Int64_overflow.value = ans; Int64_overflow.overflow = overflow} 
+end
+
+open Overflow
 (* simulator machine state -------------------------------------------------- *)
 
 let mem_bot = 0x400000L          (* lowest valid address *)
@@ -299,12 +330,12 @@ let doarith (op:opcode) (m:mach) (x:int64 option) (y:int64 option) : int64 optio
     | Addq -> Int64_overflow.add a b
     | Subq -> Int64_overflow.sub a b  
     | Imulq -> Int64_overflow.mul a b
-    | Xorq -> Int64_overflow.logxor a b
-    | Orq -> Int64_overflow.logor a b
-    | Andq -> Int64_overflow.logand a b
-    | Shlq -> Int64_overflow.shift_left a (Int64.to_int b)
-    | Sarq -> Int64_overflow.shift_right a (Int64.to_int b)
-    | Shrq -> Int64_overflow.shift_right_logical a (Int64.to_int b)
+    | Xorq -> Overflow.logxor a b
+    | Orq -> Overflow.logor a b
+    | Andq -> Overflow.logand a b
+    | Shlq -> Overflow.shift_left a (Int64.to_int b)
+    | Sarq -> Overflow.shift_right a (Int64.to_int b)
+    | Shrq -> Overflow.shift_right_logical a (Int64.to_int b)
     | _ -> failwith "not arith"
   end in
   let result = t.value in
@@ -317,7 +348,7 @@ let doarith1 (op:opcode) (m:mach) (x : int64 option) : int64 option =
   | Incq -> Int64_overflow.succ a
   | Decq -> Int64_overflow.pred a
   | Negq -> Int64_overflow.neg a
-  | Notq -> Int64_overflow.lognot a
+  | Notq -> Overflow.lognot a
   | _ -> failwith "not arith"
   end in
   let oldflags = m.flags in
