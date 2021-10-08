@@ -207,7 +207,7 @@ let debugReg (r:regs) : unit = begin
     let rec kappa l = 
       begin match l with
         | [] -> Printf.printf "\n"
-        | x::y -> Printf.printf ("%s: %s ") (string_of_reg x) (Int64.to_string r.(rind x));
+        | x::y -> Printf.printf ("%s: %x ") (string_of_reg x) (Int64.to_int r.(rind x));
                   kappa y;
       end in
     kappa rs1;
@@ -262,15 +262,14 @@ let getValue (m:mach) (opop:operand option) : int64 option =
     | Ind3 (x, y) -> Some (extractInt64 (map_addr (Int64.add m.regs.(rind y) (getImm x))))
   end
 
-let unwrap_int (x:int option) : int =
-  match x with
-    | None -> failwith "unwrap_int doesnt work..."  (* SEGFAULT HERE MAYBE ? ? ? *)
-    | Some x -> x
   
 
 (* Simple instruction to facilitate writing to an memory location *)
 let rec writeMem (m:mach) (l:sbyte list) (addr: int option): unit = 
-  let adr = unwrap_int addr in
+  let adr = begin match addr with
+    | None -> failwith "unwrap_int doesnt work..."  (* SEGFAULT HERE MAYBE ? ? ? *)
+    | Some x -> x
+  end in
   (* recursively writing the memory *)
   begin match l with
     | [] -> ()
@@ -394,7 +393,7 @@ let jump (m:mach) (v: int64 option) : unit =
 let set (m:mach) (byte:char) (byte2:int64) (desto: operand option) : unit =
   
   begin match desto with
-    | Some Reg y -> m.regs.(rind y) <- (Int64.add (Int64.logand m.regs.(rind y) 0xFFFFFFFFFFFFFF00L) byte2)
+    | Some Reg y -> m.regs.(rind y) <- (Int64.add (Int64.logand m.regs.(rind y) 0x00FFFFFFFFFFFFFFL) byte2)
     | Some Ind1 x -> writeMem m [Byte byte] (map_addr (getImm x))
     | Some Ind2 x -> writeMem m [Byte byte] (map_addr m.regs.(rind x))
     | Some Ind3 (x, y) -> writeMem m [Byte byte] (map_addr (Int64.add m.regs.(rind y) (getImm x)))
