@@ -468,6 +468,7 @@ let step (m:mach) : unit =
             | Shlq -> writeTo m (doarith opcode m op2v op1v) op2
             | Sarq -> writeTo m (doarith opcode m op2v op1v) op2
             | Shrq -> writeTo m (doarith opcode m op2v op1v) op2
+            
             | Jmp -> jump m op1v 
             | J x -> if (interp_cnd (m.flags) x) then jump m op1v
             | Cmpq -> comp m op2v op1v
