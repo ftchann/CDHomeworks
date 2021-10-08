@@ -388,7 +388,7 @@ let jump (m:mach) (v: int64 option) : unit =
     | Some c -> c
     | _ -> failwith "Missing value"
   end in
-  m.regs.(rind Rip) <- value
+  m.regs.(rind Rip) <- Int64.sub value 8L
 
 
 let set (m:mach) (byte:char) (byte2:int64) (desto: operand option) : unit =
@@ -500,7 +500,8 @@ let step (m:mach) : unit =
     end;
 
     (* update instruction pointer *)
-    Array.set m.regs (rind Rip) (Int64.add 8L ip);
+    if (m.regs.(rind Rip) = exit_addr) then () else
+    Array.set m.regs (rind Rip) (Int64.add 8L m.regs.(rind Rip));
 
     if (!debug_simulator) then (
       Printf.printf "\nAfter:\n";
@@ -668,7 +669,7 @@ let serializeInstr (input:map*sbyte list) (e:elem) : (map*sbyte list) =
 let assemble (p:prog) : exec =
   let text_size, data_size = List.fold_left compute_size (0L, 0L) p in
   let _, _map, data_segg = List.fold_left handle_data (text_size, [], []) p in
-  let _, _map = List.fold_left handle_instr (mem_bot, _map) p in
+  let _, _map = List.fold_left handle_instr (0L, _map) p in
   let _, text_segg = List.fold_left serializeInstr (_map, []) p in
   { entry    = Map.lookup _map "main"              (* address of the entry point *)
   ; text_pos = mem_bot              (* starting address of the code *)
