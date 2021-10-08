@@ -325,8 +325,37 @@ let doarith1 (op:opcode) (m:mach) (x : int64 option) : int64 option =
   let _ = setFlags op m result t.overflow in
   if op = Notq then (m.flags.fo <- oldflags.fo; m.flags.fz <- oldflags.fz; m.flags.fs <- oldflags.fs);
   return result
+let comp (m:mach) (x:int64 option) (y:int64 option) : unit =
+  let _ = doarith Subq m x y in ()
+let push (m:mach) (v: int64 option) : unit =
+  let oldreg = m.regs.(rind Rsp) in
+  let _ = m.regs.(rind Rsp) <- (Int64.sub oldreg 8L) in
+  writeTo m v (Some (Ind2 Rsp)) 
+let pop (m:mach) (dest: operand option) : unit =
+  let value = getValue m (Some (Ind2 Rsp)) in
+  let oldreg = m.regs.(rind Rsp) in
+  let _ = m.regs.(rind Rsp) <- (Int64.add oldreg 8L) in
+  writeTo m value dest
+let leq (m:mach) (i: operand option) (dest: operand option) : unit =
+  let ind = begin match i with
+    | Some c -> c
+    | _ -> raise X86lite_segfault
+  end in
+  let address = begin match ind with
+    | Reg y -> failwith "Imm x in writeTo dest"
+    | Imm x -> failwith "Imm x in writeTo dest"
+    | Ind1 x -> getImm x
+    | Ind2 x -> m.regs.(rind x)
+    | Ind3 (x, y) -> (Int64.add m.regs.(rind y) (getImm x))
+  end in
+  writeTo m (Some address) dest
 
-
+  let jump (m:mach) (v: int64 option) : unit =
+    let value = begin match v with
+      | Some c -> c
+      | _ -> failwith "Missing value"
+    end in
+    m.regs.(rind Rip) <- value
 
 (* Simulates one step of the machine:
     - fetch the instruction at %rip
@@ -390,9 +419,9 @@ let step (m:mach) : unit =
 
           begin match opcode with
             | Movq -> writeTo m op1v op2
-            | Pushq -> ()
-            | Popq -> ()     
-            | Leaq -> ()     
+            | Pushq -> push m op1v
+            | Popq -> pop m op1  
+            | Leaq -> leq m op1 op2
 
             | Incq -> writeTo m (doarith1 opcode m op1v) op1
             | Decq -> writeTo m (doarith1 opcode m op1v) op1
@@ -408,12 +437,12 @@ let step (m:mach) : unit =
             | Shlq -> writeTo m (doarith opcode m op2v op1v) op2
             | Sarq -> writeTo m (doarith opcode m op2v op1v) op2
             | Shrq -> writeTo m (doarith opcode m op2v op1v) op2
-            | Jmp -> () 
-            | J x -> ()
-            | Cmpq -> ()
+            | Jmp -> jump m op1v 
+            | J x -> if (interp_cnd (m.flags) x) then jump m op1v
+            | Cmpq -> comp m op2v op1v
             | Set x -> ()
-            | Callq 
-            | Retq -> ()
+            | Callq -> push m (Some (m.regs.(rind Rip))); jump m op1v
+            | Retq -> pop m (Some (Reg Rip))
           end
         
         
@@ -442,6 +471,7 @@ let step (m:mach) : unit =
    memory address. Returns the contents of %rax when the 
    machine halts. *)
 let run (m:mach) : int64 = 
+  push m (Some exit_addr);
   while m.regs.(rind Rip) <> exit_addr do step m done;
   m.regs.(rind Rax)
 
