@@ -264,7 +264,7 @@ let getValue (m:mach) (opop:operand option) : int64 option =
 
 let unwrap_int (x:int option) : int =
   match x with
-    | None -> failwith "unwrap_int doesnt work..."
+    | None -> failwith "unwrap_int doesnt work..."  (* SEGFAULT HERE MAYBE ? ? ? *)
     | Some x -> x
   
 
@@ -356,8 +356,10 @@ let doarith1 (op:opcode) (m:mach) (x : int64 option) : int64 option =
   let _ = setFlags op m result t.overflow in
   if op = Notq then (m.flags.fo <- oldflags.fo; m.flags.fz <- oldflags.fz; m.flags.fs <- oldflags.fs);
   return result
+
 let comp (m:mach) (x:int64 option) (y:int64 option) : unit =
   let _ = doarith Subq m x y in ()
+
 let push (m:mach) (v: int64 option) : unit =
   let oldreg = m.regs.(rind Rsp) in
   let _ = m.regs.(rind Rsp) <- (Int64.sub oldreg 8L) in
@@ -370,7 +372,8 @@ let pop (m:mach) (dest: operand option) : unit =
 let leq (m:mach) (i: operand option) (dest: operand option) : unit =
   let ind = begin match i with
     | Some c -> c
-    | _ -> raise X86lite_segfault
+    | _ -> raise X86lite_segfault   (* WHHYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY????????????????????
+                                       Dont think segfault should be here *)
   end in
   let address = begin match ind with
     | Reg y -> failwith "Imm x in writeTo dest"
@@ -381,12 +384,25 @@ let leq (m:mach) (i: operand option) (dest: operand option) : unit =
   end in
   writeTo m (Some address) dest
 
-  let jump (m:mach) (v: int64 option) : unit =
-    let value = begin match v with
-      | Some c -> c
-      | _ -> failwith "Missing value"
-    end in
-    m.regs.(rind Rip) <- value
+let jump (m:mach) (v: int64 option) : unit =
+  let value = begin match v with
+    | Some c -> c
+    | _ -> failwith "Missing value"
+  end in
+  m.regs.(rind Rip) <- value
+
+let set (m:mach) (byte:char) (byte2:int64) (desto: operand option) : unit =
+  
+  begin match desto with
+    | Some Reg y -> m.regs.(rind y) <- (Int64.add (Int64.logand m.regs.(rind y) 0xFFFFFFFFFFFFFF00L) byte2)
+    | Some Ind1 x -> writeMem m [Byte byte] (map_addr (getImm x))
+    | Some Ind2 x -> writeMem m [Byte byte] (map_addr m.regs.(rind x))
+    | Some Ind3 (x, y) -> writeMem m [Byte byte] (map_addr (Int64.add m.regs.(rind y) (getImm x)))
+    | Some Imm x -> failwith "Imm x in writeTo dest"
+    | _ -> failwith "set issue no operand"
+  end
+
+
 
 (* Simulates one step of the machine:
     - fetch the instruction at %rip
@@ -468,11 +484,11 @@ let step (m:mach) : unit =
             | Shlq -> writeTo m (doarith opcode m op2v op1v) op2
             | Sarq -> writeTo m (doarith opcode m op2v op1v) op2
             | Shrq -> writeTo m (doarith opcode m op2v op1v) op2
-            
+
             | Jmp -> jump m op1v 
             | J x -> if (interp_cnd (m.flags) x) then jump m op1v
             | Cmpq -> comp m op2v op1v
-            | Set x -> ()
+            | Set x -> if (interp_cnd (m.flags) x) then (set m '\x01' 1L op1) else (set m '\x00' 0L op1)
             | Callq -> push m (Some (m.regs.(rind Rip))); jump m op1v
             | Retq -> pop m (Some (Reg Rip))
           end
@@ -493,7 +509,6 @@ let step (m:mach) : unit =
 
       Printf.printf "\n";
     );
-
 
 
   end
