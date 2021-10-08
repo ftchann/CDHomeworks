@@ -20,17 +20,17 @@ let logxor (x:int64) (y:int64) : Int64_overflow.t =
 let logand (x:int64) (y:int64) : Int64_overflow.t = 
   let res = Int64.logand x y in
   { value = res; overflow = false} 
-let shift_left (x:int64) (y:int) =
+let shift_left (x:int64) (y:int) : Int64_overflow.t =
   let ans = Int64.shift_left x y in
   let compans = Int64.compare ans 0L in
   let compx = Int64.compare x 0L in
   let overflow = (y = 1) && ((compx < 0) && (compans > 0) || (compx > 0) && (compans < 0)) in
   { Int64_overflow.value = ans; Int64_overflow.overflow = overflow} 
-let shift_right (x:int64) (y:int) =
+let shift_right (x:int64) (y:int) : Int64_overflow.t =
   let ans = Int64.shift_right x y in
   let overflow = (y <> 1) in
   { Int64_overflow.value = ans; Int64_overflow.overflow = overflow} 
-let shift_right_logical (x:int64) (y:int) =
+let shift_right_logical (x:int64) (y:int) : Int64_overflow.t =
   let ans = Int64.shift_right_logical x y in
   let compans = Int64.compare ans 0L in
   let overflow = (y = 1) && (compans < 0) in
