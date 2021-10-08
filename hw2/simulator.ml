@@ -381,12 +381,12 @@ let leq (m:mach) (i: operand option) (dest: operand option) : unit =
   end in
   writeTo m (Some address) dest
 
-  let jump (m:mach) (v: int64 option) : unit =
-    let value = begin match v with
-      | Some c -> c
-      | _ -> failwith "Missing value"
-    end in
-    m.regs.(rind Rip) <- value
+let jump (m:mach) (v: int64 option) : unit =
+  let value = begin match v with
+    | Some c -> c
+    | _ -> failwith "Missing value"
+  end in
+  m.regs.(rind Rip) <- value
 
 (* Simulates one step of the machine:
     - fetch the instruction at %rip
