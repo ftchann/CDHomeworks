@@ -372,8 +372,7 @@ let pop (m:mach) (dest: operand option) : unit =
 let leq (m:mach) (i: operand option) (dest: operand option) : unit =
   let ind = begin match i with
     | Some c -> c
-    | _ -> raise X86lite_segfault   (* WHHYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY????????????????????
-                                       Dont think segfault should be here *)
+    | _ -> failwith "leq not good"
   end in
   let address = begin match ind with
     | Reg y -> failwith "Imm x in writeTo dest"
@@ -391,7 +390,7 @@ let jump (m:mach) (v: int64 option) : unit =
   end in
   m.regs.(rind Rip) <- value
 
-  
+
 let set (m:mach) (byte:char) (byte2:int64) (desto: operand option) : unit =
   
   begin match desto with
@@ -519,7 +518,6 @@ let step (m:mach) : unit =
    memory address. Returns the contents of %rax when the 
    machine halts. *)
 let run (m:mach) : int64 = 
-  push m (Some exit_addr);
   while m.regs.(rind Rip) <> exit_addr do step m done;
   m.regs.(rind Rax)
 
@@ -539,6 +537,120 @@ exception Undefined_sym of lbl
 (* Assemble should raise this when a label is defined more than once *)
 exception Redefined_sym of lbl
 
+
+ type map = (lbl * quad) list
+
+module Map = struct
+  let rec contains (m:map) (k:lbl) : bool =
+    begin match m with
+    | (x, y)::tl -> 
+        if x = k then true else contains tl k
+    | [] -> false
+    end
+
+  let rec lookup (m:map) (k:lbl) : quad =
+    begin match m with
+    | (x, y)::tl -> 
+      if x = k then Int64.add y mem_bot else lookup tl k
+    | [] -> raise (Undefined_sym k)
+    end
+end
+
+(* compute the size of a data field *)
+let data_size (size:int64) (d:data) : int64 = 
+begin match d with
+| Asciz a -> 
+  let len = Int64.of_int (String.length a) in
+    Int64.add size (Int64.add 1L len)
+| Quad q -> 
+  begin match q with
+  | Lit _ -> Int64.add size 8L
+  | Lbl _ -> invalid_arg "serialize header"
+  end
+end 
+
+(* Calculates the size of text and data field *)
+let compute_size (s:(int64 * int64)) (e:elem) : (int64 * int64) =
+let size_t, size_d = s in
+begin match e.asm with
+| Text t -> 
+    (* calculate the amount of instr space needed and add it *)
+    let list_size = (Int64.of_int (List.length t)) in
+    (Int64.add size_t (Int64.mul list_size 8L), size_d)
+    (* could be list of ascii thus needs another fold_left *)
+| Data d -> (size_t, Int64.add size_d (List.fold_left data_size 0L d))
+end
+
+let data_helper (dataseg: sbyte list) (data:data) : sbyte list =
+  let sbyte_of_data = sbytes_of_data data in
+  dataseg @ sbyte_of_data
+
+let handle_data (input:(int64 * map * sbyte list)) (e:elem) : (int64 * map * sbyte list) =
+  let offset, _map, dataseg = input in
+  begin match e.asm with
+    | Data datalist ->
+      let new_map =  
+        if (Map.contains _map e.lbl) then 
+          raise (Redefined_sym e.lbl)
+        else 
+          let old_data_seg_size = Int64.of_int (List.length dataseg) in
+          _map @ [(e.lbl, Int64.add offset old_data_seg_size)]
+        in
+      let new_dataseg = List.fold_left data_helper dataseg datalist in
+      (offset, new_map, new_dataseg)
+    | Text _ -> input
+  end
+
+
+let handle_instr (input:int64*map) (e:elem) : (int64*map) =
+  let index, _map = input in
+  begin match e.asm with 
+    | Data _ -> input
+    | Text inslist -> 
+      let new_map = 
+        if (Map.contains _map e.lbl) then
+          raise (Redefined_sym e.lbl)
+        else   
+          _map @ [(e.lbl, index)] in
+      let list_size = (Int64.of_int (List.length inslist)) in
+      let list_realsize = (Int64.add index (Int64.mul list_size 8L)) in
+      (list_realsize, new_map)
+  end
+
+let labeler (input:ins list * map) (ins:ins) : (ins list * map) =
+  let old_inslist, _map = input in
+
+  let labelop (op:operand) : operand = 
+    begin match op with
+      | Imm (Lbl x) -> Imm (Lit (Map.lookup _map x))
+      | Ind1 (Lbl x) -> Ind1 (Lit (Map.lookup _map x))
+      | Ind3 (Lbl x, k) -> Ind3 (Lit (Map.lookup _map x), k)
+      | _ -> op
+    end
+  in
+
+  let new_ins : ins = 
+    begin match ins with
+      | (opcode, []) -> ins
+      | (opcode, op1::[]) -> (opcode, (labelop op1)::[])
+      | (opcode, op1::op2::[]) -> (opcode, (labelop op1)::(labelop op2)::[])
+      | (_, _) -> failwith "labeler doesnt like this"
+    end
+   in
+  (old_inslist @ [new_ins], _map)
+
+let serilize (textseg: sbyte list) (ins:ins) : (sbyte list) =
+  textseg @ sbytes_of_ins ins 
+
+let serializeInstr (input:map*sbyte list) (e:elem) : (map*sbyte list) = 
+  let _map, textseg = input in
+  begin match e.asm with
+    | Data _ -> input
+    | Text inslist -> 
+      let new_inslist, _map  = List.fold_left labeler ([],_map) inslist in
+      (_map , List.fold_left serilize textseg new_inslist)
+  end
+  
 (* Convert an X86 program into an object file:
    - separate the text and data segments
    - compute the size of each segment
@@ -554,11 +666,23 @@ exception Redefined_sym of lbl
   HINT: List.fold_left and List.fold_right are your friends.
  *)
 let assemble (p:prog) : exec =
-failwith "assemble unimplemented"
+  let text_size, data_size = List.fold_left compute_size (0L, 0L) p in
+  let _, _map, data_segg = List.fold_left handle_data (text_size, [], []) p in
+  let _, _map = List.fold_left handle_instr (mem_bot, _map) p in
+  let _, text_segg = List.fold_left serializeInstr (_map, []) p in
+  { entry    = Map.lookup _map "main"              (* address of the entry point *)
+  ; text_pos = mem_bot              (* starting address of the code *)
+  ; data_pos = Int64.add mem_bot text_size             (* starting address of the data *)
+  ; text_seg = text_segg       (* contents of the text segment *)
+  ; data_seg = data_segg        (* contents of the data segment *)
+  }
 
+
+
+  
 (* Convert an object file into an executable machine state. 
-    - allocate the mem array
-    - set up the memory state by writing the symbolic bytes to the 
+  - allocate the mem array
+  - set up the memory state by writing the symbolic bytes to the 
       appropriate locations 
     - create the inital register state
       - initialize rip to the entry point address
@@ -570,4 +694,25 @@ failwith "assemble unimplemented"
   may be of use.
 *)
 let load {entry; text_pos; data_pos; text_seg; data_seg} : mach = 
-failwith "load unimplemented"
+  let memm = Array.make mem_size (Byte '\x00') in
+  let prog = Array.of_list (text_seg@data_seg) in
+  let prog_size = Array.length prog in
+  let exit_address = Array.of_list (sbytes_of_int64 exit_addr) in
+  
+  let exit_address_length = Array.length exit_address in 
+  Array.blit prog 0 memm 0 prog_size;
+  Array.blit exit_address 0 memm (mem_size - 8) exit_address_length;
+
+  let regss = Array.make nregs 0L in
+  regss.(rind Rip) <- entry;
+  regss.(rind Rsp) <- Int64.sub mem_top 8L;
+  
+
+  let flagss = { fo = false; fs = false; fz = false} in
+  {
+    flags = flagss;
+    regs = regss;
+    mem = memm
+  } 
+  
+
