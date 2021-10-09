@@ -6,7 +6,8 @@
 
 #use "simulator.ml";;
 #use "gradedtests.ml";;
-
+#use "providedtests.ml";;
+#use "studenttests.ml";;
 let () = 
   begin
     Simulator.debug_simulator := true;

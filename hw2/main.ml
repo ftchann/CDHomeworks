@@ -6,7 +6,7 @@ open Simulator
 exception Ran_tests
 let worklist = ref []
 
-let suite = ref (timeout_suite 5 (Studenttests.provided_tests @ Gradedtests.graded_tests))
+let suite = ref (timeout_suite 5 (Providedtests.provided_tests @ Studenttests.other_team_tests @ Gradedtests.graded_tests))
 
 let exec_tests () =
   let o = run_suite !suite in

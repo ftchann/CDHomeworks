@@ -1,7 +1,7 @@
 DIRS := util,grading,x86
 LIBS := unix,str,nums
 SUBMIT := simulator.ml team.txt
-OTHER := gradedtests.ml studenttests.ml main.ml 
+OTHER := providedtests.ml gradedtests.ml studenttests.ml main.ml 
 HWNAME := hw02
 TIMESTAMP := $(shell /bin/date "+%Y-%m-%d-%H-%M-%S")
 ZIPNAME := $(HWNAME)-submit($(TIMESTAMP)).zip
