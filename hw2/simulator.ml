@@ -207,7 +207,7 @@ let debugReg (r:regs) : unit = begin
     let rec kappa l = 
       begin match l with
         | [] -> Printf.printf "\n"
-        | x::y -> Printf.printf ("%s: %x ") (string_of_reg x) (Int64.to_int r.(rind x));
+        | x::y -> Printf.printf ("%s: %s ") (string_of_reg x) (Int64.to_string r.(rind x));
                   kappa y;
       end in
     kappa rs1;
@@ -415,7 +415,6 @@ let step (m:mach) : unit =
     (* fetch $rip *)
     let ip = m.regs.(rind Rip) in
 
-    Array.set m.regs (rind Rip) (Int64.add 8L m.regs.(rind Rip));
     (* get instruction *)
     let index = map_addr ip in
     let instrdata = m.mem.(
@@ -435,6 +434,8 @@ let step (m:mach) : unit =
       debugFlags m.flags;
       debugReg m.regs;
     );
+    (* update instr *)
+    Array.set m.regs (rind Rip) (Int64.add 8L m.regs.(rind Rip));
 
     (* Simulate Instruction *)
     begin match instrdata with
@@ -691,12 +692,11 @@ let assemble (p:prog) : exec =
 let load {entry; text_pos; data_pos; text_seg; data_seg} : mach = 
   let memm = Array.make mem_size (Byte '\x00') in
   let prog = Array.of_list (text_seg@data_seg) in
-  let prog_size = Array.length prog in
+  let prog_size = (Array.length prog) in
   let exit_address = Array.of_list (sbytes_of_int64 exit_addr) in
   
-  let exit_address_length = Array.length exit_address in 
   Array.blit prog 0 memm 0 prog_size;
-  Array.blit exit_address 0 memm (mem_size - 8) exit_address_length;
+  Array.blit exit_address 0 memm (mem_size - 8) 8;
 
   let regss = Array.make nregs 0L in
   regss.(rind Rip) <- entry;
@@ -708,6 +708,6 @@ let load {entry; text_pos; data_pos; text_seg; data_seg} : mach =
     flags = flagss;
     regs = regss;
     mem = memm
-  } 
+  }
   
 

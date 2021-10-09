@@ -1084,7 +1084,7 @@ let maxmcc_tests =
   let start = -40 in
   let pen_ult = -50 in
   let ult = -1 in
-  let heap_top = 0x400100 in
+  let heap_top = 0x400200 in
 
   (* Part 3 program: linked_list_max
    *

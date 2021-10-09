@@ -59,6 +59,39 @@ let reverse a =
           ]
       ]
 
+let indr =  
+  [
+    text "main" 
+    [
+      Movq, [~$(-11134); Ind1 (Lit 0x400300L)]
+    ; Movq, [Ind1 (Lit 0x400300L); ~%Rax]
+    ; Retq, []
+    ]
+  ]
+
+let indr2 =  
+  [
+    text "main" 
+    [
+      Movq, [~$(0x400200); ~%Rax]
+    ; Movq, [~$(-11134); Ind2 (Rax)]
+    ; Movq, [Ind2 (Rax); ~%Rax]
+    ; Retq, []
+    ]
+  ]
+
+let indr3 = 
+  [
+    text "main"
+    [
+      Movq, [~$(0x400200); ~%Rax]
+    ; Movq, [~$(-11134); Ind3 (Lit 3L, Rax)]
+    ; Movq, [Ind1 (Lit 0x400203L); ~%Rax]
+    ; Retq, []
+    ]
+  ]
+
+
 let provided_tests : suite = [
   Test ("Student-Provided Big Test for Part III: Score recorded as PartIIITestCase", [
   	("12", program_test (reverse 12) 21L);
@@ -70,6 +103,12 @@ let provided_tests : suite = [
   		(reverse 256367) 763652L);
   	(* should not work for negatives! *)
   	("keep negs the same", program_test (reverse (-19)) (-19L)); 
+    ("blub" , program_test indr (-11134L));
+    ("blub2" , program_test indr2 (-11134L));
+    ("blub2" , program_test indr3 (-11134L));
   ])
 
 ] 
+let () = 
+let str = string_of_prog indr3 in
+Printf.printf "%s" str
