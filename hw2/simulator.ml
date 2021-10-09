@@ -387,13 +387,13 @@ let jump (m:mach) (v: int64 option) : unit =
     | Some c -> c
     | _ -> failwith "Missing value"
   end in
-  m.regs.(rind Rip) <- Int64.sub value 8L
+  m.regs.(rind Rip) <- value(*Int64.sub value 8L*)
 
 
 let set (m:mach) (byte:char) (byte2:int64) (desto: operand option) : unit =
   
   begin match desto with
-    | Some Reg y -> m.regs.(rind y) <- (Int64.add (Int64.logand m.regs.(rind y) 0x00FFFFFFFFFFFFFFL) byte2)
+    | Some Reg y -> m.regs.(rind y) <- (Int64.add (Int64.logand m.regs.(rind y) 0xFFFFFFFFFFFFFF00L) (byte2))
     | Some Ind1 x -> writeMem m [Byte byte] (map_addr (getImm x))
     | Some Ind2 x -> writeMem m [Byte byte] (map_addr m.regs.(rind x))
     | Some Ind3 (x, y) -> writeMem m [Byte byte] (map_addr (Int64.add m.regs.(rind y) (getImm x)))
@@ -415,6 +415,7 @@ let step (m:mach) : unit =
     (* fetch $rip *)
     let ip = m.regs.(rind Rip) in
 
+    Array.set m.regs (rind Rip) (Int64.add 8L m.regs.(rind Rip));
     (* get instruction *)
     let index = map_addr ip in
     let instrdata = m.mem.(
@@ -489,18 +490,12 @@ let step (m:mach) : unit =
             | Cmpq -> comp m op2v op1v
             | Set x -> if (interp_cnd (m.flags) x) then (set m '\x01' 1L op1) else (set m '\x00' 0L op1)
             | Callq -> push m (Some (m.regs.(rind Rip))); jump m op1v
-            | Retq -> pop m (Some (Reg Rip))
-          end
-        
-        
+            | Retq -> pop m (Some (Reg Rip)); 
+          end;     
       )
       (* No instruction *)
       | _ -> failwith "No Instr at this location"
     end;
-
-    (* update instruction pointer *)
-    if (m.regs.(rind Rip) = exit_addr) then () else
-    Array.set m.regs (rind Rip) (Int64.add 8L m.regs.(rind Rip));
 
     if (!debug_simulator) then (
       Printf.printf "\nAfter:\n";
