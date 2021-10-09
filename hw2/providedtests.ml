@@ -91,6 +91,42 @@ let indr3 =
     ]
   ]
 
+let set1 =
+  [
+    text "main"
+    [
+      Movq, [~$(0x400200); ~%Rdx]
+    ; Movq, [Imm (Lit 0xDEADBEEFBEEFEED0L); Ind2 Rdx]
+    ; Cmpq, [~$0; ~$0]
+    ; Set Eq, [Ind2 Rdx]
+    ; Movq, [Ind2 Rdx; ~%Rax]
+    ; Retq, []
+    ]
+  ]
+let set2 =
+  [
+    text "main"
+    [
+      Movq, [~$(0x400200); ~%Rdx]
+    ; Movq, [Imm (Lit 0xDEADBEEFBEEFDEADL); Ind2 Rdx]
+    ; Cmpq, [~$0; ~$1]
+    ; Set Eq, [Ind2 Rdx]
+    ; Movq, [Ind2 Rdx; ~%Rax]
+    ; Retq, []
+    ]
+  ]
+
+let set3 = 
+  [
+    text "main"
+    [
+      Movq, [Imm (Lit 0xDEADBEEFBEEFDEADL); ~%Rax]
+    ; Cmpq, [~$0; ~$0]
+    ; Set Eq, [~%Rax]
+    ; Retq, []
+    ]
+  ]
+
 
 let provided_tests : suite = [
   Test ("Student-Provided Big Test for Part III: Score recorded as PartIIITestCase", [
@@ -106,6 +142,9 @@ let provided_tests : suite = [
     ("blub" , program_test indr (-11134L));
     ("blub2" , program_test indr2 (-11134L));
     ("blub2" , program_test indr3 (-11134L));
+    ("set1"), program_test set1 0xDEADBEEFBEEFEE01L;
+    ("set2"), program_test set2 0xDEADBEEFBEEFDE00L;
+    ("set3"), program_test set3 0xDEADBEEFBEEFDE01L;
   ])
 
 ] 
