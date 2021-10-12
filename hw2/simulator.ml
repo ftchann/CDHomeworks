@@ -357,9 +357,6 @@ let doarith (op:opcode) (m:mach) (x:int64 option) (y:int64 option) : int64 optio
   if (op = Subq) && (b = Int64.min_int) then m.flags.fo <-true;
   return result
 
-(*FAILED - shift_400: expected -2 l>> 1 ==> 9223372036854775807 of=true sf=false zero=false  
-shift_400 ==> 9223372036854775807, of=false,sf=false,zf=false
-*)
 
 let doarith1 (op:opcode) (m:mach) (x : int64 option) : int64 option = 
   x >>= fun a ->
@@ -463,6 +460,7 @@ let step (m:mach) : unit =
       | InsB0 x -> (
         let instr = x in
 
+
         (* extract the operands *)
         let op1 =
           begin match instr with
@@ -475,16 +473,49 @@ let step (m:mach) : unit =
             | (_, _x::y::_) -> Some y
             | (_, _) -> None
           end in
+        let ismem1 = begin match op1 with
+          | Some (Ind1 _) -> true
+          | Some (Ind2 _) -> true
+          | Some (Ind3 _) -> true
+          | _ -> false
+        end in
+        let ismem2 = begin match op2 with
+          | Some (Ind1 _) -> true
+          | Some (Ind2 _) -> true
+          | Some (Ind3 _) -> true
+          | _ -> false
+        end in
         
-        (* extract the actual value of the operands *)
-        let op1v = getValue m op1 in
-        let op2v = getValue m op2 in
+        if (ismem2 && ismem1) then failwith "2 memory operands";
+        
+
 
         (* match on opcode *)
         let opcode = 
           match instr with
             | (x, _) -> x in
+          begin match opcode, op2 with
+            | Imulq, (Some Reg _) -> ()
+            | Imulq, _ -> failwith "no op in imul"
 
+            | _, _ -> ()
+          end;
+          begin match opcode, op1 with
+            | Sarq, (Some Reg Rcx) -> ()
+            | Sarq, (Some Imm _ ) -> ()
+            | Sarq, _ -> failwith "wrong op in shift"
+            | Shrq, (Some Reg Rcx) -> ()
+            | Shrq, (Some Imm _ ) -> ()
+            | Shrq, _ -> failwith "wrong op in shift"
+            | Shlq, (Some Reg Rcx) -> ()
+            | Shlq, (Some Imm _ ) -> ()
+            | Shlq, _ -> failwith "wrong op in shift"
+            | _, _ -> ()
+          end;
+
+          (* extract the actual value of the operands *)
+          let op1v = getValue m op1 in
+          let op2v = getValue m op2 in
           begin match opcode with
             | Movq -> writeTo m op1v op2
             | Pushq -> push m op1v
