@@ -32,8 +32,8 @@ let shift_right (x:int64) (y:int) : Int64_overflow.t =
   { Int64_overflow.value = ans; Int64_overflow.overflow = overflow} 
 let shift_right_logical (x:int64) (y:int) : Int64_overflow.t =
   let ans = Int64.shift_right_logical x y in
-  let compans = Int64.compare ans 0L in
-  let overflow = (y = 1) && (compans < 0) in
+  let compx = Int64.compare x 0L in
+  let overflow = (y = 1) && (compx < 0) in
   { Int64_overflow.value = ans; Int64_overflow.overflow = overflow} 
 end
 
@@ -322,13 +322,22 @@ let setFlags (op:opcode) (m:mach) (ans:int64) (overflow:bool) : unit =
     m.flags.fo <- overflow
   end
 
-let logicalFlags (m:mach) (oldflags: flags) (shiftamount: int) : unit = 
-  if shiftamount = 0 then (m.flags.fz <- oldflags.fz; m.flags.fs <- oldflags.fs; m.flags.fo <- m.flags.fo)
-  else if shiftamount = 1 then m.flags.fo <- m.flags.fo
+
+let logicalFlags (m:mach) (s:bool) (z:bool) (o:bool) (shiftamount: int) : unit = 
+  begin
+    if shiftamount = 0 then (m.flags.fz <- z; m.flags.fs <- s; m.flags.fo <- o)
+    else if shiftamount <> 1 then m.flags.fo <- o
+  end
+
 let doarith (op:opcode) (m:mach) (x:int64 option) (y:int64 option) : int64 option =
+
+  let fs = m.flags.fs in
+  let fo = m.flags.fo in
+  let fz = m.flags.fz in
+
   x >>= fun a -> 
   y >>= fun b ->
-  let oldflags = m.flags in
+
   let t = begin match op with
     | Addq -> Int64_overflow.add a b
     | Subq -> Int64_overflow.sub a b  
@@ -344,9 +353,13 @@ let doarith (op:opcode) (m:mach) (x:int64 option) (y:int64 option) : int64 optio
 
   let result = t.value in
   let _ = setFlags op m result t.overflow in
-  if op = Shlq || op = Sarq || op = Shrq then logicalFlags m oldflags (Int64.to_int b);
-
+  if op = Shlq || op = Sarq || op = Shrq then logicalFlags m fs fz fo (Int64.to_int b);
+  if (op = Subq) && (b = Int64.min_int) then m.flags.fo <-true;
   return result
+
+(*FAILED - shift_400: expected -2 l>> 1 ==> 9223372036854775807 of=true sf=false zero=false  
+shift_400 ==> 9223372036854775807, of=false,sf=false,zf=false
+*)
 
 let doarith1 (op:opcode) (m:mach) (x : int64 option) : int64 option = 
   x >>= fun a ->

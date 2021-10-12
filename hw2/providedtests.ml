@@ -153,12 +153,12 @@ let provided_tests : suite = [
     ("set2"), program_test set2 0xDEADBEEFBEEFDE00L;
     ("set3"), program_test set3 0xDEADBEEFBEEFDE01L;
   ]);
-  Test ("Debug", []);
+  (*Test ("Debug", []);*)
   (* Test ("all_the_xor", xor_tests);
-  Test ("all_the_add", add_tests); *)
-  Test ("all_the_sub", sub_tests);
-  (* Test ("all_the_shift", shift_tests);
-  Test ("all_the_invalid", invalid_tests);
+  Test ("all_the_add", add_tests);
+  Test ("all_the_sub", sub_tests); *)
+  Test ("all_the_shift", shift_tests);
+  (* Test ("all_the_invalid", invalid_tests);
   Test ("all_the_kek", kek_tests); *)
 
 ] 

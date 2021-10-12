@@ -10,6 +10,8 @@ let test_shift_0_data = test_machine [
     InsB0 (Sarq, [Imm (Lit (0L)); Reg Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;
     InsB0 (Retq, []);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;
   ]
+  (*FAILED - shift_1: expected -1 l>> 0 ==> -1 of=true sf=true zero=false*)
+  (*shift_1 ==> -1, of=false,sf=true,zf=false*)
 let test_shift_1_data = test_machine [
     InsB0 (Xorq, [Reg Rax; Reg Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;
     InsB0 (Xorq, [Imm (Lit (-1L)); Reg Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;
