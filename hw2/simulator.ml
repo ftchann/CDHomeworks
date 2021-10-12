@@ -345,6 +345,7 @@ let doarith (op:opcode) (m:mach) (x:int64 option) (y:int64 option) : int64 optio
   let result = t.value in
   let _ = setFlags op m result t.overflow in
   if op = Shlq || op = Sarq || op = Shrq then logicalFlags m oldflags (Int64.to_int b);
+
   return result
 
 let doarith1 (op:opcode) (m:mach) (x : int64 option) : int64 option = 

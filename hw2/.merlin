@@ -1,5 +1,6 @@
 S util
 S x86
+S hodeltests
 S Simulator
 S Int64_overflow
 S .

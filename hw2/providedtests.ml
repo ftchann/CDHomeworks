@@ -2,6 +2,12 @@ open Assert
 open X86
 open Simulator
 open Asm
+open Xor_test
+open Add_test
+open Sub_test
+open Shift_test
+open Invalid_test
+open Kek
 
 (* These tests are provided by you -- they will be graded manually *)
 
@@ -145,7 +151,14 @@ let provided_tests : suite = [
     ("set1"), program_test set1 0xDEADBEEFBEEFEE01L;
     ("set2"), program_test set2 0xDEADBEEFBEEFDE00L;
     ("set3"), program_test set3 0xDEADBEEFBEEFDE01L;
-  ])
+  ]);
+  Test ("Debug", []);
+  (* Test ("all_the_xor", xor_tests);
+  Test ("all_the_add", add_tests); *)
+  Test ("all_the_sub", sub_tests);
+  (* Test ("all_the_shift", shift_tests);
+  Test ("all_the_invalid", invalid_tests);
+  Test ("all_the_kek", kek_tests); *)
 
 ] 
 let () = 
