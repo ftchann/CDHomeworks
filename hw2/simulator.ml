@@ -359,6 +359,11 @@ let doarith (op:opcode) (m:mach) (x:int64 option) (y:int64 option) : int64 optio
 
 
 let doarith1 (op:opcode) (m:mach) (x : int64 option) : int64 option = 
+
+  let fs = m.flags.fs in
+  let fo = m.flags.fo in
+  let fz = m.flags.fz in
+
   x >>= fun a ->
   let t = begin match op with
   | Incq -> Int64_overflow.succ a
@@ -367,10 +372,9 @@ let doarith1 (op:opcode) (m:mach) (x : int64 option) : int64 option =
   | Notq -> Overflow.lognot a
   | _ -> failwith "not arith"
   end in
-  let oldflags = m.flags in
   let result = t.value in
   let _ = setFlags op m result t.overflow in
-  if op = Notq then (m.flags.fo <- oldflags.fo; m.flags.fz <- oldflags.fz; m.flags.fs <- oldflags.fs);
+  if op = Notq then (m.flags.fo <- fo; m.flags.fz <- fz; m.flags.fs <- fs);
   return result
 
 let comp (m:mach) (x:int64 option) (y:int64 option) : unit =
