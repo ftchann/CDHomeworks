@@ -362,7 +362,6 @@ let compile_lbl_block fn lbl ctxt blk : elem =
    - in this (inefficient) compilation strategy, each local id
      is also stored as a stack slot.
    - see the discussion about locals
-
 *)
 let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
   let g (c:int) = Ind3 (Lit (Int64.of_int (c*(-8))), Rbp) in
@@ -379,10 +378,19 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
       | [] -> []
   in
 
+  let rec k (l:(string * Ll.block) list) = 
+    match l with
+      | (_, blocks)::y -> block.insns @ k y  
+      | [] -> []
+  in
+
+  let inss = block.insns @ k lbled_blocks in
+
   (* NOT SURE IF 1 or 0*)
   let layp = f args 1 in
-  let layb = h block.insns ((List.length layp)+1) in
-  
+
+  let layb = h inss ((List.length layp)+1) in
+
 
   layp @ layb
   
