@@ -102,9 +102,14 @@ let compile_operand (ctxt:ctxt) (dest:X86.operand) (op:Ll.operand): ins =
     | Null -> Asm.(Movq, [~$0 ; dest])
     | Const x -> Asm.(Movq, [~$(Int64.to_int x) ; dest])
     | Id uid -> (
-      match memberOf ctxt.layout uid with 
+      match memberOf ctxt.layout ("kappa"^uid) with 
       | Some x -> Asm.(Movq, [x; dest])
-      | None -> failwith "compiled operand no uid"
+      | None -> 
+        (
+          match memberOf ctxt.layout ("param"^uid) with 
+            | Some x -> Asm.(Movq, [x; dest])
+            | None -> Asm.(Movq, [~$(-123456); dest]) 
+        )
       )
     | Gid x -> Asm.(Leaq, [Ind3 (Lbl (Platform.mangle x), Rip); dest])
   end
@@ -203,7 +208,6 @@ let rec size_ty (tdecls:(tid * ty) list) (t:Ll.ty) : int =
 *)
 let compile_gep (ctxt:ctxt) (op : Ll.ty * Ll.operand) (path: Ll.operand list) : ins list =
 failwith "compile_gep not implemented"
-
 
 
 (* compiling instructions  -------------------------------------------------- *)
@@ -326,7 +330,7 @@ let compilePrologue (layout:layout) : ins list =
               @[Movq, [Reg Rax ; y]] @ f z
 
           (* NOT NEEDED ONLY FOR DEBUG *)
-        else [Movq, [Imm (Lit 0L) ; y]] @ f z
+        else [Movq, [Imm (Lit 6969L) ; y]] @ f z
       | _ -> []
     end
   in
@@ -370,10 +374,18 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
       | [] -> []
   in
 
+  let rec h (l:(Ll.uid * Ll.insn) list) (c:int) =
+    match l with
+      | (x, _)::y -> ("kappa"^x, g c) :: h y (c+1)
+      | [] -> []
+  in
+
   (* NOT SURE IF 1 or 0*)
   let layp = f args 1 in
+  let layb = h block.insns ((List.length layp)+1) in
+  
 
-  layp
+  layp @ layb
   
 
 
