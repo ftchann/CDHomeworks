@@ -263,9 +263,19 @@ let compile_lbl_block fn lbl ctxt blk : elem =
 
    [ NOTE: the first six arguments are numbered 0 .. 5 ]
 *)
-let arg_loc (n : int) : operand =
-failwith "arg_loc not implemented"
 
+
+
+let arg_loc (n : int) (amount : int) : operand = 
+  begin match n with
+    | 0 -> Reg Rdi
+    | 1 -> Reg Rsi
+    | 2 -> Reg Rdx
+    | 3 -> Reg Rcx
+    | 4 -> Reg R08
+    | 5 -> Reg R09
+    | x -> Ind3 (Lit (Int64.of_int ((amount + 1 - x)*8)), Rbp) 
+  end
 
 (* We suggest that you create a helper function that computes the
    stack layout for a given function declaration.
@@ -277,7 +287,28 @@ failwith "arg_loc not implemented"
 
 *)
 let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
-failwith "stack_layout not implemented"
+  let g (c:int) = Ind3 (Lit (Int64.of_int (c*(-8))), Rbp) in
+
+  let rec f (l:uid list) (c:int) = 
+    match l with
+      | x::y -> (x, g c) :: f y (c+1)
+      | [] -> []
+  in
+
+
+
+
+
+  (* NOT SURE IF 1 or 0*)
+  let layp = f args 1 in
+
+  layp
+  
+
+
+  
+
+  
 
 (* The code for the entry-point of a function must do several things:
 
@@ -295,8 +326,55 @@ failwith "stack_layout not implemented"
    - the function entry code should allocate the stack storage needed
      to hold all of the local stack slots.
 *)
+
+let compilePrologue (para:string list) (layout:layout) : ins list =
+  let ins : ins list = 
+    [Pushq, [Reg Rbp]]
+  @ [Movq, [Reg Rsp;Reg Rbp]]
+  @ [Subq, [Imm (Lit (Int64.of_int ((List.length layout)*8))); Reg Rsp]] 
+  in
+
+  let rec getIndex a l c = 
+    match l with
+    | [] -> failwith "should never happen"
+    | x::y -> if (x=a) then c else getIndex a y (c+1) 
+  in
+
+
+  let rec f (l:layout) : ins list =
+    begin match l with
+      | (x,y)::z -> 
+        if List.mem x para then 
+          if ((getIndex x para 0) < 6) then [Movq, [arg_loc (getIndex x para 0) (List.length para) ; y]] @ f z
+          else [Movq, [arg_loc (getIndex x para 0) (List.length para) ; Reg Rax]]
+              @[Movq, [Reg Rax ; y]] @ f z
+
+          (* NOT NEEDED ONLY FOR DEBUG *)
+        else [Movq, [Imm (Lit 0L) ; y]] @ f z
+      | _ -> []
+    end
+  in
+
+  ins @ f layout
+
+
+let compileEpilogue (layout:layout) : ins list =
+  let ins : ins list = 
+    [Movq, [Reg Rbp; Reg Rsp]]
+  @ [Popq, [Reg Rbp]]
+  @ [Retq, []] in
+
+  ins
+
+
 let compile_fdecl (tdecls:(tid * ty) list) (name:string) ({ f_ty; f_param; f_cfg }:fdecl) : prog =
-failwith "compile_fdecl unimplemented"
+  let layout : layout = stack_layout f_param f_cfg in
+  let ctxt : ctxt = {tdecls=tdecls ; layout} in
+
+  let instr = compilePrologue f_param layout @ compileEpilogue layout in
+
+  { lbl= name; global=(name="main"); asm=Text instr }::[]
+  
 
 
 
