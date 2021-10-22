@@ -419,17 +419,6 @@ let compile_fdecl (tdecls:(tid * ty) list) (name:string) ({ f_ty; f_param; f_cfg
   let layout : layout = stack_layout f_param f_cfg in
   let ctxt : ctxt = {tdecls=tdecls ; layout=layout} in
 
-  (*let prologue = compilePrologue layout in
-
-  let tuid, tty = match f_cfg with | (x, _) -> match x.term with | (y, z) -> y, z in
-  let terminator = compile_terminator tuid ctxt tty in
-
-
-  let instr = prologue @ terminator in
-
-  { lbl= name; global=(name="main"); asm=Text instr }::[]
-*)
-
   let entry = match f_cfg with (b, _) -> b in
   let prologue = compilePrologue ctxt.layout in
   let entryC = prologue @ compile_block name ctxt entry in 
