@@ -128,6 +128,8 @@ let compile_operand (ctxt:ctxt) (dest:X86.operand) : Ll.operand -> ins =
    the appropriate arithmetic calculations.
 *)
 
+
+
 (* [size_ty] maps an LLVMlite type to a size in bytes.
     (needed for getelementptr)
 
@@ -140,7 +142,18 @@ let compile_operand (ctxt:ctxt) (dest:X86.operand) : Ll.operand -> ins =
      Your function should simply return 0 in those cases
 *)
 let rec size_ty (tdecls:(tid * ty) list) (t:Ll.ty) : int =
-failwith "size_ty not implemented"
+  begin match t with
+  | Void 
+  | I8 
+  | Fun _ -> 0
+  | I1 
+  | I64 
+  | Ptr _ -> 8
+  | Struct [] -> 0
+  | Struct (y::x) -> size_ty tdecls y + size_ty tdecls (Struct x)
+  | Array (x, y) -> x * size_ty tdecls y
+  | Namedt x -> size_ty tdecls (lookup tdecls x)
+  end
 
 
 
