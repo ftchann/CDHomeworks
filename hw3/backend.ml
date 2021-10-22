@@ -265,30 +265,13 @@ let compile_terminator (fn:string) (ctxt:ctxt) (t:Ll.terminator) : ins list =
       | Some y -> Asm.[(compile_operand ctxt (Reg Rax) y)]
       | None -> Asm.[(Movq, [~$0; ~%Rax])] (* maybe better to leave empty idk? *)
       ) @ compileEpilogue
-    (*| Br x -> Asm.[(Jmp, [~$$(mk_lbl fn x)])]
-    | Cbr (op, lb1, lb2) -> []*)
+    | Br x -> Asm.[(Jmp, [~$$(mk_lbl fn x)])]
+    (*| Cbr (op, lb1, lb2) -> []*)
     | _ -> []
   end
 
 
 (* compiling blocks --------------------------------------------------------- *)
-
-(* We have left this helper function here for you to complete. 
-   [fn] - the name of the function containing this block
-   [ctxt] - the current context
-   [blk]  - LLVM IR code for the block
-*)
-let compile_block (fn:string) (ctxt:ctxt) (blk:Ll.block) : ins list =
-  failwith "compile_block not implemented"
-
-let compile_lbl_block fn lbl ctxt blk : elem =
-  Asm.text (mk_lbl fn lbl) (compile_block fn ctxt blk)
-
-
-
-(* compile_fdecl ------------------------------------------------------------ *)
-
-
 (* This helper function computes the location of the nth incoming
    function argument: either in a register or relative to %rbp,
    according to the calling conventions.  You might find it useful for
@@ -309,6 +292,65 @@ let arg_loc (n : int) (amount : int) : operand =
     | 5 -> Reg R09
     | x -> Ind3 (Lit (Int64.of_int ((amount + 1 - x)*8)), Rbp) 
   end
+let compilePrologue (layout:layout) : ins list =
+
+  let rec createPara (l:layout) = 
+    begin match l with
+      | (x, y)::z ->  if String.equal (String.sub x 0 5) "param" then x :: createPara z
+                      else createPara z 
+      | [] -> []
+    end
+  in
+
+  let para = createPara layout in
+
+
+  let ins : ins list = 
+    [Pushq, [Reg Rbp]]
+  @ [Movq, [Reg Rsp;Reg Rbp]]
+  @ [Subq, [Imm (Lit (Int64.of_int ((List.length layout)*8))); Reg Rsp]] 
+  in
+
+  let rec getIndex a l c = 
+    match l with
+    | [] -> failwith "should never happen"
+    | x::y -> if (x=a) then c else getIndex a y (c+1) 
+  in
+
+  let rec f (l:layout) : ins list =
+    begin match l with
+      | (x,y)::z -> 
+        if List.mem x para then 
+          if ((getIndex x para 0) < 6) then [Movq, [arg_loc (getIndex x para 0) (List.length para) ; y]] @ f z
+          else [Movq, [arg_loc (getIndex x para 0) (List.length para) ; Reg Rax]]
+              @[Movq, [Reg Rax ; y]] @ f z
+
+          (* NOT NEEDED ONLY FOR DEBUG *)
+        else [Movq, [Imm (Lit 0L) ; y]] @ f z
+      | _ -> []
+    end
+  in
+
+  ins @ f layout
+(* We have left this helper function here for you to complete. 
+   [fn] - the name of the function containing this block
+   [ctxt] - the current context
+   [blk]  - LLVM IR code for the block
+*)
+let compile_block (fn:string) (ctxt:ctxt) (blk:Ll.block) : ins list =
+  let tuid, tty = match blk.term with | (y, z) -> y, z in
+  let terminator = compile_terminator fn ctxt tty in
+  terminator
+
+let compile_lbl_block fn lbl ctxt blk : elem =
+  Asm.text (mk_lbl fn lbl) (compile_block fn ctxt blk)
+
+
+
+(* compile_fdecl ------------------------------------------------------------ *)
+
+
+
 
 (* We suggest that you create a helper function that computes the
    stack layout for a given function declaration.
@@ -324,13 +366,9 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
 
   let rec f (l:uid list) (c:int) = 
     match l with
-      | x::y -> (x, g c) :: f y (c+1)
+      | x::y -> ("param"^x, g c) :: f y (c+1)
       | [] -> []
   in
-
-
-
-
 
   (* NOT SURE IF 1 or 0*)
   let layp = f args 1 in
@@ -360,34 +398,7 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
      to hold all of the local stack slots.
 *)
 
-let compilePrologue (para:string list) (layout:layout) : ins list =
-  let ins : ins list = 
-    [Pushq, [Reg Rbp]]
-  @ [Movq, [Reg Rsp;Reg Rbp]]
-  @ [Subq, [Imm (Lit (Int64.of_int ((List.length layout)*8))); Reg Rsp]] 
-  in
 
-  let rec getIndex a l c = 
-    match l with
-    | [] -> failwith "should never happen"
-    | x::y -> if (x=a) then c else getIndex a y (c+1) 
-  in
-
-  let rec f (l:layout) : ins list =
-    begin match l with
-      | (x,y)::z -> 
-        if List.mem x para then 
-          if ((getIndex x para 0) < 6) then [Movq, [arg_loc (getIndex x para 0) (List.length para) ; y]] @ f z
-          else [Movq, [arg_loc (getIndex x para 0) (List.length para) ; Reg Rax]]
-              @[Movq, [Reg Rax ; y]] @ f z
-
-          (* NOT NEEDED ONLY FOR DEBUG *)
-        else [Movq, [Imm (Lit 0L) ; y]] @ f z
-      | _ -> []
-    end
-  in
-
-  ins @ f layout
 
 
 
@@ -395,9 +406,9 @@ let compilePrologue (para:string list) (layout:layout) : ins list =
 
 let compile_fdecl (tdecls:(tid * ty) list) (name:string) ({ f_ty; f_param; f_cfg }:fdecl) : prog =
   let layout : layout = stack_layout f_param f_cfg in
-  let ctxt : ctxt = {tdecls=tdecls ; layout} in
+  let ctxt : ctxt = {tdecls=tdecls ; layout=layout} in
 
-  let prologue = compilePrologue f_param layout in
+  (*let prologue = compilePrologue layout in
 
   let tuid, tty = match f_cfg with | (x, _) -> match x.term with | (y, z) -> y, z in
   let terminator = compile_terminator tuid ctxt tty in
@@ -406,7 +417,23 @@ let compile_fdecl (tdecls:(tid * ty) list) (name:string) ({ f_ty; f_param; f_cfg
   let instr = prologue @ terminator in
 
   { lbl= name; global=(name="main"); asm=Text instr }::[]
-  
+*)
+
+  let entry = match f_cfg with (b, _) -> b in
+  let prologue = compilePrologue ctxt.layout in
+  let entryC = prologue @ compile_block name ctxt entry in 
+  let blocks = match f_cfg with (_, b) -> b in
+
+  let f (b:string * Ll.block) =
+    match b with 
+      | (x, y) -> compile_lbl_block name x ctxt y 
+  in 
+
+
+
+  let blocksC = List.map f blocks in
+
+  [Asm.gtext name entryC] @ blocksC
 
 
 
