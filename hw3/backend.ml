@@ -89,8 +89,26 @@ let lookup m x = List.assoc x m
    the X86 instruction that moves an LLVM operand into a designated
    destination (usually a register).
 *)
-let compile_operand (ctxt:ctxt) (dest:X86.operand) : Ll.operand -> ins =
-  function _ -> failwith "compile_operand unimplemented"
+
+let rec memberOf (layout:layout) (a:Ll.uid) = 
+  match layout with
+    | (x,z)::y ->   if (x == a) then Some z
+                    else memberOf y a
+    | [] -> None 
+
+
+let compile_operand (ctxt:ctxt) (dest:X86.operand) (op:Ll.operand): ins =
+  begin match op with 
+    | Null -> Asm.(Movq, [~$0 ; dest])
+    | Const x -> Asm.(Movq, [~$(Int64.to_int x) ; dest])
+    | Id uid -> (
+      match memberOf ctxt.layout uid with 
+      | Some x -> Asm.(Movq, [x; dest])
+      | None -> failwith "compiled operand no uid"
+      )
+    | Gid x -> Asm.(Leaq, [Ind3 (Lbl (Platform.mangle x), Rip); dest])
+  end
+  
 
 
 
@@ -234,8 +252,23 @@ let mk_lbl (fn:string) (l:string) = fn ^ "." ^ l
 
    [fn] - the name of the function containing this terminator
 *)
+
 let compile_terminator (fn:string) (ctxt:ctxt) (t:Ll.terminator) : ins list =
-  failwith "compile_terminator not implemented"
+  let compileEpilogue =
+    [Movq, [Reg Rbp; Reg Rsp]]
+    @ [Popq, [Reg Rbp]]
+    @ [Retq, []] in
+
+  begin match t with 
+    | Ret (x, y) -> 
+      ( match y with 
+      | Some y -> Asm.[(compile_operand ctxt (Reg Rax) y)]
+      | None -> Asm.[(Movq, [~$0; ~%Rax])] (* maybe better to leave empty idk? *)
+      ) @ compileEpilogue
+    (*| Br x -> Asm.[(Jmp, [~$$(mk_lbl fn x)])]
+    | Cbr (op, lb1, lb2) -> []*)
+    | _ -> []
+  end
 
 
 (* compiling blocks --------------------------------------------------------- *)
@@ -340,7 +373,6 @@ let compilePrologue (para:string list) (layout:layout) : ins list =
     | x::y -> if (x=a) then c else getIndex a y (c+1) 
   in
 
-
   let rec f (l:layout) : ins list =
     begin match l with
       | (x,y)::z -> 
@@ -358,20 +390,20 @@ let compilePrologue (para:string list) (layout:layout) : ins list =
   ins @ f layout
 
 
-let compileEpilogue (layout:layout) : ins list =
-  let ins : ins list = 
-    [Movq, [Reg Rbp; Reg Rsp]]
-  @ [Popq, [Reg Rbp]]
-  @ [Retq, []] in
 
-  ins
 
 
 let compile_fdecl (tdecls:(tid * ty) list) (name:string) ({ f_ty; f_param; f_cfg }:fdecl) : prog =
   let layout : layout = stack_layout f_param f_cfg in
   let ctxt : ctxt = {tdecls=tdecls ; layout} in
 
-  let instr = compilePrologue f_param layout @ compileEpilogue layout in
+  let prologue = compilePrologue f_param layout in
+
+  let tuid, tty = match f_cfg with | (x, _) -> match x.term with | (y, z) -> y, z in
+  let terminator = compile_terminator tuid ctxt tty in
+
+
+  let instr = prologue @ terminator in
 
   { lbl= name; global=(name="main"); asm=Text instr }::[]
   
