@@ -285,8 +285,7 @@ let compile_terminator (fn:string) (ctxt:ctxt) (t:Ll.terminator) : ins list =
 *)
 
 
-
-let arg_loc (n : int) (amount : int) : operand = 
+let arg_loc (n : int) : operand = 
   begin match n with
     | 0 -> Reg Rdi
     | 1 -> Reg Rsi
@@ -294,7 +293,7 @@ let arg_loc (n : int) (amount : int) : operand =
     | 3 -> Reg Rcx
     | 4 -> Reg R08
     | 5 -> Reg R09
-    | x -> Ind3 (Lit (Int64.of_int ((amount + 1 - x)*8)), Rbp) 
+    | x -> Ind3 (Lit (Int64.of_int (((x-6)+2)*8)), Rbp) 
   end
 let compilePrologue (layout:layout) : ins list =
 
@@ -325,8 +324,8 @@ let compilePrologue (layout:layout) : ins list =
     begin match l with
       | (x,y)::z -> 
         if List.mem x para then 
-          if ((getIndex x para 0) < 6) then [Movq, [arg_loc (getIndex x para 0) (List.length para) ; y]] @ f z
-          else [Movq, [arg_loc (getIndex x para 0) (List.length para) ; Reg Rax]]
+          if ((getIndex x para 0) < 6) then [Movq, [arg_loc (getIndex x para 0) ; y]] @ f z
+          else [Movq, [arg_loc (getIndex x para 0) ; Reg Rax]]
               @[Movq, [Reg Rax ; y]] @ f z
 
           (* NOT NEEDED ONLY FOR DEBUG *)
