@@ -259,7 +259,7 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       let x1 = compile_operand ctxt (Reg Rdi) op2 in
       let x2 = compile_operand ctxt (Reg Rax) op1 in
       let x3 = Asm.(toX86 op, [~%Rdi ; ~%Rax]) in
-      let opdest = coolLookup ctxt.layout ("kappa"^uid) in
+      let opdest = coolLookup ctxt.layout (uid) in
       let x4 = Asm.(Movq, [~%Rax; opdest]) in
       if (op = Lshr || op = Ashr || op = Shl) 
       then x2 :: Asm.(toX86 op, [getOperand op2; ~%Rax]) :: x4 :: []
@@ -267,7 +267,7 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
     in
 
     let load (t:Ll.ty) (op:Ll.operand) : X86.ins list = 
-      let opdest = coolLookup ctxt.layout ("kappa"^uid) in
+      let opdest = coolLookup ctxt.layout (uid) in
       let x1 = compile_operand ctxt Asm.(~%Rax) op in
       let x2 = Asm.(Movq, [~%Rax;opdest]) in
       let x3 = Asm.(Movq, [Ind2 Rax; ~%Rax]) in
