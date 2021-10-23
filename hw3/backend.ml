@@ -559,8 +559,8 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
   let layp = f args 1 in
 
   let layb = uid_layout inss layp in
-(*
-  let fold_helper  (elem:(string * X86.operand)) : string =
+
+  (* let fold_helper  (elem:(string * X86.operand)) : string =
     let (a, _) = elem in
     a
   in
@@ -576,7 +576,7 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
     
 
   let s = stringi smap in
-  failwith s;*)
+  failwith s; *)
 
   layb
 
