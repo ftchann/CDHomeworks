@@ -239,6 +239,12 @@ failwith "compile_gep not implemented"
 
    - Bitcast: does nothing interesting at the assembly level
 *)
+(* compiling terminators  --------------------------------------------------- *)
+
+(* prefix the function name [fn] to a label to ensure that the X86 labels are 
+   globally unique . *)
+let mk_lbl (fn:string) (l:string) = fn ^ "." ^ l
+
 let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
     let compile_binop (op:Ll.bop) (tz:Ll.ty) (op1:Ll.operand) (op2:Ll.operand) : X86.ins list =
       let toX86 (op:Ll.bop) : X86.opcode =
@@ -273,13 +279,34 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       | _ -> x1 :: x2 :: []
     in
 
+    let conditionCode (c:Ll.cnd) : (X86.opcode * X86.operand list) =
+      match c with
+        | Eq -> Asm.(Set Neq, [~%Rax])
+        | Ne -> Asm.(Set Neq, [~%Rax])
+        | Sgt -> Asm.(Set Gt, [~%Rax])
+        | Sge -> Asm.(Set Ge, [~%Rax])
+        | Slt -> Asm.(Set Lt, [~%Rax])
+        | Sle -> Asm.(Set Le, [~%Rax])
+    in 
+    let icmp (c:Ll.cnd) (t:Ll.ty) (op1:Ll.operand) (op2:Ll.operand) = 
+      let x1 = compile_operand ctxt Asm.(~%Rax) op1 in
+      let x2 = compile_operand ctxt Asm.(~%Rdi) op2 in
+      let x3 = Asm.(Cmpq, [~%Rdi; ~%Rax]) in
+      let x4 = Asm.(Movq, [~$0; ~%Rax]) in
+      let x5 = conditionCode c in
+      x1::x2::x3::x4::x5::[]
+    in
+
+
+
+
 
     begin match i with
       | Binop (op, ty, a , b) -> compile_binop op ty a b
       | Alloca ty -> failwith "alloca"
       | Load (ty, op) -> load ty op
       | Store (ty, op, op2) -> failwith "store"
-      | Icmp (cnd, ty, op, op2) -> failwith "imcp"
+      | Icmp (cnd, ty, op, op2) -> icmp cnd ty op op2
       | Call (ty, op, tyopl) -> failwith "call"
       | Bitcast (ty, op, ty2) -> failwith "bitcast"
       | Gep (ty, op, opl) -> failwith "gep"
@@ -287,11 +314,6 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
 
 
 
-(* compiling terminators  --------------------------------------------------- *)
-
-(* prefix the function name [fn] to a label to ensure that the X86 labels are 
-   globally unique . *)
-let mk_lbl (fn:string) (l:string) = fn ^ "." ^ l
 
 (* Compile block terminators is not too difficult:
 
@@ -319,8 +341,10 @@ let compile_terminator (fn:string) (ctxt:ctxt) (t:Ll.terminator) : ins list =
       | None -> Asm.[(Movq, [~$0; ~%Rax])] (* maybe better to leave empty idk? *)
       ) @ compileEpilogue
     | Br x -> Asm.[(Jmp, [~$$(mk_lbl fn x)])]
-    (*| Cbr (op, lb1, lb2) -> []*)
-    | _ -> []
+    | Cbr (op, lb1, lb2) -> 
+      Asm.[(Cmpq, [~$1;~%Rax])] @ 
+      Asm.[(J Eq, [~$$(mk_lbl fn lb1)])] @ 
+      Asm.[(Jmp, [~$$(mk_lbl fn lb2)])]
   end
 
 
