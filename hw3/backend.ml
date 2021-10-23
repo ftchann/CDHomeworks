@@ -115,7 +115,12 @@ let compile_operand (ctxt:ctxt) (dest:X86.operand):  Ll.operand -> ins =
       | Gid x -> Asm.(Leaq, [Ind3 (Lbl (Platform.mangle x), Rip); dest])
     end
     
-
+let getOperand (op:Ll.operand) : X86.operand =
+  begin match op with 
+    | Null -> Asm.(~$0)
+    | Const x -> Asm.(~$ (Int64.to_int x))
+    | _ -> failwith "not allowed I think?"
+  end
 
 
 (* compiling call  ---------------------------------------------------------- *)
@@ -248,23 +253,25 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
           | Or -> Orq
           | Xor -> Xorq
       in  
-      let x1 = compile_operand ctxt (Reg Rax) op2 in
-      let x2 = compile_operand ctxt (Reg Rdi) op1 in
+      let x1 = compile_operand ctxt (Reg Rdi) op2 in
+      let x2 = compile_operand ctxt (Reg Rax) op1 in
       let x3 = Asm.(toX86 op, [~%Rdi ; ~%Rax]) in
       let opdest = lookup ctxt.layout ("kappa"^uid) in
       let x4 = Asm.(Movq, [~%Rax; opdest]) in
-      x1 :: x2 ::  x3 :: x4 :: []
+      if (op = Lshr || op = Ashr || op = Shl) 
+      then x2 :: Asm.(toX86 op, [getOperand op2; ~%Rax]) :: x4 :: []
+      else x1 :: x2 ::  x3 :: x4 :: []
     in
 
     begin match i with
       | Binop (op, ty, a , b) -> compile_binop op ty a b
-      | Alloca ty -> [Asm.(Movq, [~$0; ~$0])]
-      | Load (ty, op) -> [Asm.(Movq, [~$0; ~$0])]
-      | Store (ty, op, op2) -> [Asm.(Movq, [~$0; ~$0])]
-      | Icmp (cnd, ty, op, op2) -> [Asm.(Movq, [~$0; ~$0])]
-      | Call (ty, op, tyopl) -> [Asm.(Movq, [~$0; ~$0])]
-      | Bitcast (ty, op, ty2) -> [Asm.(Movq, [~$0; ~$0])]
-      | Gep (ty, op, opl) -> [Asm.(Movq, [~$0; ~$0])]
+      | Alloca ty -> failwith "alloca"
+      | Load (ty, op) -> failwith "Load"
+      | Store (ty, op, op2) -> failwith "store"
+      | Icmp (cnd, ty, op, op2) -> failwith "imcp"
+      | Call (ty, op, tyopl) -> failwith "call"
+      | Bitcast (ty, op, ty2) -> failwith "bitcast"
+      | Gep (ty, op, opl) -> failwith "gep"
     end
 
 
