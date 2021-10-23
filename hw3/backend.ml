@@ -121,15 +121,6 @@ let getOperand (op:Ll.operand) (ctxt:ctxt) : X86.operand =
     | Id uid -> coolLookup ctxt.layout uid
   end
 
-let specialEditionCompOp (ctxt:ctxt) (dest:X86.operand):  Ll.operand -> ins =
-  fun (op:Ll.operand) ->
-    begin match op with 
-      | Id uid -> let x = coolLookup ctxt.layout uid in
-                  Asm.(Leaq, [x; dest])
-      | Gid x -> Asm.(Leaq, [Ind3 (Lbl (Platform.mangle x), Rip); dest])
-      | _ -> failwith "woops bad special"
-    end
-
 
 (* compiling call  ---------------------------------------------------------- *)
 
@@ -222,8 +213,7 @@ let rec size_ty (tdecls:(tid * ty) list) (t:Ll.ty) : int =
 *)
 let compile_gep (ctxt:ctxt) ((t,op) : Ll.ty * Ll.operand) (path: Ll.operand list) : ins list =
   let lasttype = ref t in
-  let added = ref 0 in
-  let first = specialEditionCompOp ctxt Asm.(~%Rax) op in
+  let first = compile_operand ctxt Asm.(~%Rax) op in
 (*
   struct {
     int 
@@ -232,18 +222,17 @@ let compile_gep (ctxt:ctxt) ((t,op) : Ll.ty * Ll.operand) (path: Ll.operand list
   }
 *)
 
-
-  let rec gepify (path: Ll.operand list) : unit =
+  let rec gepify (path: Ll.operand list) =
     begin match path with
-      | (Const x)::y -> 
-        added := (size_ty ctxt.tdecls !lasttype)*(Int64.to_int (x)) + !added;
+      | op::y ->
+         
+        let x1 = compile_operand ctxt Asm.(~%Rdx) op in 
+        let size = size_ty ctxt.tdecls !lasttype in
+        let x2 = Asm.(Imulq, [~$size; ~%Rdx]) in
+        let x3 = Asm.(Addq, [~%Rdx; ~%Rax]) in
+
         (* has to be recursive*)
         
-        let z = ref "" in
-        (while match !lasttype with | Namedt k -> z:=k; true | _ -> false
-        do 
-          lasttype := lookup ctxt.tdecls !z;
-        done;)
         lasttype := begin match !lasttype with 
           | Void -> Void;
           | I8 -> I8;
@@ -252,20 +241,19 @@ let compile_gep (ctxt:ctxt) ((t,op) : Ll.ty * Ll.operand) (path: Ll.operand list
           | I64 -> I64;
           | Ptr t -> Ptr t;
           | Struct [] -> Void;
-          | Struct (typlist) -> List.nth typlist (Int64.to_int x);
+          | Struct (typlist) -> (
+            match op with 
+            | Const x -> List.nth typlist (Int64.to_int x)
+            | _ -> failwith "oof");
           | Array (_, typ) -> typ
           | Namedt a -> lookup ctxt.tdecls a;
         end;
-        gepify y;
-      | [] -> ()
-      | _ -> failwith "gep wasnt constant"
+        x1 :: x2 :: x3 ::gepify y;
+      | [] -> []
     end
   in
 
-  gepify path;
-
-  let last = Asm.(Addq, [~$(!added) ; ~%Rax]) in
-  first :: last :: []
+  first :: gepify path
 
 
 (* compiling instructions  -------------------------------------------------- *)
