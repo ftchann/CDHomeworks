@@ -268,7 +268,9 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       let x1 = compile_operand ctxt Asm.(~%Rax) op in
       let x2 = Asm.(Movq, [~%Rax;opdest]) in
       let x3 = Asm.(Movq, [Ind2 Rax; ~%Rax]) in
-      x1 :: x3 :: x2 :: []
+      match op with 
+      | Gid _ -> x1 :: x3 :: x2 :: []
+      | _ -> x1 :: x2 :: []
     in
 
 
