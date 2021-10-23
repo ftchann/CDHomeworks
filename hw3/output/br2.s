@@ -15,7 +15,7 @@ main.next:
 	jmp	main.end
 	.text
 main.end:
-	movq	$-123456, %rax
+	movq	-24(%rbp), %rax
 	movq	%rbp, %rsp
 	popq	%rbp
 	retq	

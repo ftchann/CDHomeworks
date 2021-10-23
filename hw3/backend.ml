@@ -92,7 +92,7 @@ let lookup m x = List.assoc x m
 
 let rec memberOf (layout:layout) (a:Ll.uid) = 
   match layout with
-    | (x,z)::y ->   if (x == a) then Some z
+    | (x,z)::y ->   if (String.equal x a) then Some z
                     else memberOf y a
     | [] -> None 
 
@@ -267,7 +267,7 @@ let compile_terminator (fn:string) (ctxt:ctxt) (t:Ll.terminator) : ins list =
   begin match t with 
     | Ret (x, y) -> 
       ( match y with 
-      | Some y -> Asm.[(compile_operand ctxt (Reg Rax) y)]
+      | Some y -> Asm.[((compile_operand ctxt (Reg Rax)) y)]
       | None -> Asm.[(Movq, [~$0; ~%Rax])] (* maybe better to leave empty idk? *)
       ) @ compileEpilogue
     | Br x -> Asm.[(Jmp, [~$$(mk_lbl fn x)])]
@@ -307,7 +307,6 @@ let compilePrologue (layout:layout) : ins list =
   in
 
   let para = createPara layout in
-
 
   let ins : ins list = 
     [Pushq, [Reg Rbp]]
@@ -387,7 +386,6 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
 
   let inss = block.insns @ k lbled_blocks in
 
-  (* NOT SURE IF 1 or 0*)
   let layp = f args 1 in
 
   let layb = h inss ((List.length layp)+1) in

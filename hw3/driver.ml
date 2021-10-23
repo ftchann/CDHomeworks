@@ -3,7 +3,7 @@ open Platform
 
 (* configuration flags ------------------------------------------------------ *)
 let interpret_ll = ref false   (* run the ll interpreter? *)
-let print_ll_flag = ref false       (* print the generated ll code? *)
+let print_ll_flag = ref true       (* print the generated ll code? *)
 let print_x86_flag = ref false      (* print the generated x86 code? *)
 let clang = ref false          (* use the clang backend? *)
 let assemble = ref true        (* assemble the .s to .o files? *)
