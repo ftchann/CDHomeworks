@@ -263,10 +263,6 @@ let compile_gep (ctxt:ctxt) ((t,op) : Ll.ty * Ll.operand) (path: Ll.operand list
 
         let x23 = if (!istruct) then (istruct := false; [Asm.(Addq, [~$size; ~%Rax])])
         else x1 :: [Asm.(Imulq, [~$size; ~%Rdx]); Asm.(Addq, [~%Rdx; ~%Rax])] in
-
-        Printf.printf "size is: %d \n" size;
-        (* has to be recursive *)
-        Printf.printf "%s \n" (string_of_ins x1 );
         
         lasttype := begin match !lasttype with 
           | Void -> Void
