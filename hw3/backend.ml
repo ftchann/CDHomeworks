@@ -295,8 +295,9 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
     in
 
     let c = ref 0 in
+    let amount = ref 0 in
 
-    let callMover ((x,y):Ll.ty * Ll.operand) = 
+    let callMover ((x,uid):Ll.ty * Ll.operand) = 
       let op = begin match !c with
         | 0 -> Reg Rdi
         | 1 -> Reg Rsi
@@ -304,11 +305,11 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
         | 3 -> Reg Rcx
         | 4 -> Reg R08
         | 5 -> Reg R09
-        | z -> Ind3 (Lit (Int64.of_int (((z-6)+List.length ctxt.layout)*(-8))), Rbp) 
+        | z -> Ind3 (Lit (Int64.of_int (((!amount - z)+List.length ctxt.layout)*(-8))), Rbp) 
       end in
       c:= !c + 1;
       (* Move to Rax and then into Stack or whereever *)
-      compile_operand ctxt Asm.(~%Rax) y ::
+      compile_operand ctxt Asm.(~%Rax) uid ::
       Asm.(Movq, [~%Rax; op]) :: []
     in
 
@@ -322,9 +323,13 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       | Icmp (cnd, ty, op, op2) -> icmp cnd ty op op2
       | Call (ty, Gid name, tyopl) -> 
         begin
+          amount := List.length tyopl;
           (* first allocate stack for new variables? *)
-          if (List.length tyopl > 6 ) then Asm.[Subq, [~$((List.length tyopl - 6)*8); ~%Rsp]]
-          else [] @
+          let extend = if (!amount > 6 ) 
+            then Asm.[Subq, [~$((!amount - 6)*8); ~%Rsp]]
+            else []
+          in
+          extend  @
           (* Push varibles to the right place ""*)
           List.flatten (List.map callMover tyopl) @
           (*Asm.[Callq, [getOperand op]]*)
