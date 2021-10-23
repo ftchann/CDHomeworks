@@ -307,32 +307,6 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       Asm.(Movq, [~%Rax; op]) :: []
     in
 
-
-(*
-movq    %rsp, %rbp
-        subq    $40, %rsp
-        movq    %rdi, -8(%rbp)
-        movq    %rsi, -16(%rbp)
-        subq    $8, %rsp
-        movq    -40(%rbp), %rax
-        movq    %rax, -24(%rbp)
-        movq    $17, %rax
-        movq    -24(%rbp), %rdi
-        movq    %rax, (%rdi) 
-        
-        movq    -24(%rbp), %rax
-        movq    (%rax), %rax 
-
-
-        ----
-        --movq    %rax, -32(%rbp)--
-        
-        
-        
-        movq    -40(%rbp), %rax
-        movq    %rbp, %rsp
-        popq    %rbp
-*) 
     let load (t:Ll.ty) (opsrc:Ll.operand) : X86.ins list = 
       let opdst = coolLookup ctxt.layout (uid) in
       let x1 = compile_operand ctxt Asm.(~%Rax) opsrc in 
@@ -351,7 +325,6 @@ movq    %rsp, %rbp
       currStackSize := !currStackSize + size;
       incSize :: ptr :: movUid :: []
     in
-
 
     let store (t:Ll.ty) (op1:Ll.operand) (op2:Ll.operand) =
       let x1 = compile_operand ctxt Asm.(~%Rax) op1 in
@@ -385,7 +358,8 @@ movq    %rsp, %rbp
           Asm.[Movq, [~%Rax; coolLookup ctxt.layout (uid)]]
         end
       | Call _ -> failwith "do we need that?"
-      | Bitcast (ty, op, ty2) -> failwith "bitcast"
+      | Bitcast (ty, op, ty2) -> compile_operand ctxt Asm.(~%Rax) op :: 
+                                Asm.(Movq, [~%Rax; coolLookup ctxt.layout uid]) :: []
       | Gep (ty, op, opl) -> failwith "gep"
     end
 
