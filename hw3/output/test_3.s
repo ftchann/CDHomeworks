@@ -57,6 +57,7 @@ main:
 	movq	-32(%rbp), %rax
 	movq	-24(%rbp), %rdi
 	addq	%rdi, %rax
+	movq	%rax, -40(%rbp)
 	movq	-40(%rbp), %rax
 	movq	%rbp, %rsp
 	popq	%rbp

@@ -251,7 +251,9 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       let x1 = compile_operand ctxt (Reg Rax) op2 in
       let x2 = compile_operand ctxt (Reg Rdi) op1 in
       let x3 = Asm.(toX86 op, [~%Rdi ; ~%Rax]) in
-      x1 :: x2 ::  x3 :: []
+      let opdest = lookup ctxt.layout ("kappa"^uid) in
+      let x4 = Asm.(Movq, [~%Rax; opdest]) in
+      x1 :: x2 ::  x3 :: x4 :: []
     in
 
     begin match i with

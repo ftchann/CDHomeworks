@@ -19,6 +19,7 @@ main:
 	movq	$0, %rax
 	movq	$0, %rdi
 	addq	%rdi, %rax
+	movq	%rax, -24(%rbp)
 	movq	$0, $0
 	movq	$0, $0
 	movq	-40(%rbp), %rax

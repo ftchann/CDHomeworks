@@ -9,6 +9,7 @@ bar:
 	movq	-16(%rbp), %rax
 	movq	-8(%rbp), %rdi
 	addq	%rdi, %rax
+	movq	%rax, -24(%rbp)
 	movq	-24(%rbp), %rax
 	movq	%rbp, %rsp
 	popq	%rbp
