@@ -235,7 +235,35 @@ failwith "compile_gep not implemented"
    - Bitcast: does nothing interesting at the assembly level
 *)
 let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
-      failwith "compile_insn not implemented"
+    let compile_binop (op:Ll.bop) (tz:Ll.ty) (op1:Ll.operand) (op2:Ll.operand) : X86.ins list =
+      let toX86 (op:Ll.bop) : X86.opcode =
+        match op with
+          | Add -> Addq
+          | Sub -> Subq
+          | Mul -> Imulq
+          | Shl -> Shlq
+          | Lshr -> Shrq
+          | Ashr -> Sarq
+          | And -> Andq
+          | Or -> Orq
+          | Xor -> Xorq
+      in  
+      let x1 = compile_operand ctxt (Reg Rax) op2 in
+      let x2 = compile_operand ctxt (Reg Rdi) op1 in
+      let x3 = Asm.(toX86 op, [~%Rdi ; ~%Rax]) in
+      x1 :: x2 ::  x3 :: []
+    in
+
+    begin match i with
+      | Binop (op, ty, a , b) -> compile_binop op ty a b
+      | Alloca ty -> [Asm.(Movq, [~$0; ~$0])]
+      | Load (ty, op) -> [Asm.(Movq, [~$0; ~$0])]
+      | Store (ty, op, op2) -> [Asm.(Movq, [~$0; ~$0])]
+      | Icmp (cnd, ty, op, op2) -> [Asm.(Movq, [~$0; ~$0])]
+      | Call (ty, op, tyopl) -> [Asm.(Movq, [~$0; ~$0])]
+      | Bitcast (ty, op, ty2) -> [Asm.(Movq, [~$0; ~$0])]
+      | Gep (ty, op, opl) -> [Asm.(Movq, [~$0; ~$0])]
+    end
 
 
 
@@ -340,9 +368,19 @@ let compilePrologue (layout:layout) : ins list =
    [blk]  - LLVM IR code for the block
 *)
 let compile_block (fn:string) (ctxt:ctxt) (blk:Ll.block) : ins list =
+
+  (* generate List of Inst *)
+  let genInstr (ins:(Ll.uid * Ll.insn)) : ins list =
+    compile_insn ctxt ins
+  in
+  let inslist2 = List.map genInstr blk.insns in
+  let inslist = List.flatten inslist2 in
+    
+  (* generate terminator *)
   let tuid, tty = match blk.term with | (y, z) -> y, z in
   let terminator = compile_terminator fn ctxt tty in
-  terminator
+
+  inslist @ terminator
 
 let compile_lbl_block fn lbl ctxt blk : elem =
   Asm.text (mk_lbl fn lbl) (compile_block fn ctxt blk)
