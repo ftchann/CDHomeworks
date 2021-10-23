@@ -263,10 +263,19 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       else x1 :: x2 ::  x3 :: x4 :: []
     in
 
+    let load (t:Ll.ty) (op:Ll.operand) : X86.ins list = 
+      let opdest = lookup ctxt.layout ("kappa"^uid) in
+      let x1 = compile_operand ctxt Asm.(~%Rax) op in
+      let x2 = Asm.(Movq, [~%Rax;opdest]) in
+      let x3 = Asm.(Movq, [Ind2 Rax; ~%Rax]) in
+      x1 :: x3 :: x2 :: []
+    in
+
+
     begin match i with
       | Binop (op, ty, a , b) -> compile_binop op ty a b
       | Alloca ty -> failwith "alloca"
-      | Load (ty, op) -> failwith "Load"
+      | Load (ty, op) -> load ty op
       | Store (ty, op, op2) -> failwith "store"
       | Icmp (cnd, ty, op, op2) -> failwith "imcp"
       | Call (ty, op, tyopl) -> failwith "call"
