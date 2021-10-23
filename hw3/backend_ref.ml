@@ -89,32 +89,8 @@ let lookup m x = List.assoc x m
    the X86 instruction that moves an LLVM operand into a designated
    destination (usually a register).
 *)
-
-let rec memberOf (layout:layout) (a:Ll.uid) = 
-  match layout with
-    | (x,z)::y ->   if (x == a) then Some z
-                    else memberOf y a
-    | [] -> None 
-
-
-let compile_operand (ctxt:ctxt) (dest:X86.operand):  Ll.operand -> ins =
-  fun (op:Ll.operand) ->
-    begin match op with 
-      | Null -> Asm.(Movq, [~$0 ; dest])
-      | Const x -> Asm.(Movq, [~$(Int64.to_int x) ; dest])
-      | Id uid -> (
-        match memberOf ctxt.layout ("kappa"^uid) with 
-        | Some x -> Asm.(Movq, [x; dest])
-        | None -> 
-          (
-            match memberOf ctxt.layout ("param"^uid) with 
-              | Some x -> Asm.(Movq, [x; dest])
-              | None -> Asm.(Movq, [~$(-123456); dest]) 
-          )
-        )
-      | Gid x -> Asm.(Leaq, [Ind3 (Lbl (Platform.mangle x), Rip); dest])
-    end
-    
+let compile_operand (ctxt:ctxt) (dest:X86.operand) : Ll.operand -> ins =
+  function _ -> failwith "compile_operand unimplemented"
 
 
 
@@ -153,6 +129,9 @@ let compile_operand (ctxt:ctxt) (dest:X86.operand):  Ll.operand -> ins =
 *)
 
 
+let compile_gep (ctxt:ctxt) (op : Ll.ty * Ll.operand) (path: Ll.operand list) : ins list =
+  failwith "compile_gep not implemented"
+  
 
 (* [size_ty] maps an LLVMlite type to a size in bytes.
     (needed for getelementptr)
@@ -166,18 +145,7 @@ let compile_operand (ctxt:ctxt) (dest:X86.operand):  Ll.operand -> ins =
      Your function should simply return 0 in those cases
 *)
 let rec size_ty (tdecls:(tid * ty) list) (t:Ll.ty) : int =
-  begin match t with
-  | Void 
-  | I8 
-  | Fun _ -> 0
-  | I1 
-  | I64 
-  | Ptr _ -> 8
-  | Struct [] -> 0
-  | Struct (y::x) -> size_ty tdecls y + size_ty tdecls (Struct x)
-  | Array (x, y) -> x * size_ty tdecls y
-  | Namedt x -> size_ty tdecls (lookup tdecls x)
-  end
+failwith "size_ty not implemented"
 
 
 
@@ -207,8 +175,6 @@ let rec size_ty (tdecls:(tid * ty) list) (t:Ll.ty) : int =
       in (4), but relative to the type f the sub-element picked out
       by the path so far
 *)
-let compile_gep (ctxt:ctxt) (op : Ll.ty * Ll.operand) (path: Ll.operand list) : ins list =
-failwith "compile_gep not implemented"
 
 
 (* compiling instructions  -------------------------------------------------- *)
@@ -257,94 +223,19 @@ let mk_lbl (fn:string) (l:string) = fn ^ "." ^ l
 
    [fn] - the name of the function containing this terminator
 *)
-
 let compile_terminator (fn:string) (ctxt:ctxt) (t:Ll.terminator) : ins list =
-  let compileEpilogue =
-    [Movq, [Reg Rbp; Reg Rsp]]
-    @ [Popq, [Reg Rbp]]
-    @ [Retq, []] in
-
-  begin match t with 
-    | Ret (x, y) -> 
-      ( match y with 
-      | Some y -> Asm.[(compile_operand ctxt (Reg Rax) y)]
-      | None -> Asm.[(Movq, [~$0; ~%Rax])] (* maybe better to leave empty idk? *)
-      ) @ compileEpilogue
-    | Br x -> Asm.[(Jmp, [~$$(mk_lbl fn x)])]
-    (*| Cbr (op, lb1, lb2) -> []*)
-    | _ -> []
-  end
+  failwith "compile_terminator not implemented"
 
 
 (* compiling blocks --------------------------------------------------------- *)
-(* This helper function computes the location of the nth incoming
-   function argument: either in a register or relative to %rbp,
-   according to the calling conventions.  You might find it useful for
-   compile_fdecl.
 
-   [ NOTE: the first six arguments are numbered 0 .. 5 ]
-*)
-
-
-let arg_loc (n : int) : operand = 
-  begin match n with
-    | 0 -> Reg Rdi
-    | 1 -> Reg Rsi
-    | 2 -> Reg Rdx
-    | 3 -> Reg Rcx
-    | 4 -> Reg R08
-    | 5 -> Reg R09
-    | x -> Ind3 (Lit (Int64.of_int (((x-6)+2)*8)), Rbp) 
-  end
-let compilePrologue (layout:layout) : ins list =
-
-  let rec createPara (l:layout) = 
-    begin match l with
-      | (x, y)::z ->  if String.equal (String.sub x 0 5) "param" then x :: createPara z
-                      else createPara z 
-      | [] -> []
-    end
-  in
-
-  let para = createPara layout in
-
-
-  let ins : ins list = 
-    [Pushq, [Reg Rbp]]
-  @ [Movq, [Reg Rsp;Reg Rbp]]
-  @ [Subq, [Imm (Lit (Int64.of_int ((List.length layout)*8))); Reg Rsp]] 
-  in
-
-  let rec getIndex a l c = 
-    match l with
-    | [] -> failwith "should never happen"
-    | x::y -> if (x=a) then c else getIndex a y (c+1) 
-  in
-
-  let rec f (l:layout) : ins list =
-    begin match l with
-      | (x,y)::z -> 
-        if List.mem x para then 
-          if ((getIndex x para 0) < 6) then [Movq, [arg_loc (getIndex x para 0) ; y]] @ f z
-          else [Movq, [arg_loc (getIndex x para 0) ; Reg Rax]]
-              @[Movq, [Reg Rax ; y]] @ f z
-
-          (* NOT NEEDED ONLY FOR DEBUG *)
-        else [Movq, [Imm (Lit 6969L) ; y]] @ f z
-      | _ -> []
-    end
-  in
-
-  ins @ f layout
 (* We have left this helper function here for you to complete. 
    [fn] - the name of the function containing this block
    [ctxt] - the current context
    [blk]  - LLVM IR code for the block
 *)
 let compile_block (fn:string) (ctxt:ctxt) (blk:Ll.block) : ins list =
-  let tuid, tty = match blk.term with | (y, z) -> y, z in
-  let terminator = compile_terminator fn ctxt tty in
-  terminator
+  failwith "compile_block not implemented"
 
 let compile_lbl_block fn lbl ctxt blk : elem =
   Asm.text (mk_lbl fn lbl) (compile_block fn ctxt blk)
@@ -354,6 +245,15 @@ let compile_lbl_block fn lbl ctxt blk : elem =
 (* compile_fdecl ------------------------------------------------------------ *)
 
 
+(* This helper function computes the location of the nth incoming
+   function argument: either in a register or relative to %rbp,
+   according to the calling conventions.  You might find it useful for
+   compile_fdecl.
+
+   [ NOTE: the first six arguments are numbered 0 .. 5 ]
+*)
+let arg_loc (n : int) : operand =
+failwith "arg_loc not implemented"
 
 
 (* We suggest that you create a helper function that computes the
@@ -363,43 +263,10 @@ let compile_lbl_block fn lbl ctxt blk : elem =
    - in this (inefficient) compilation strategy, each local id
      is also stored as a stack slot.
    - see the discussion about locals
+
 *)
 let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
-  let g (c:int) = Ind3 (Lit (Int64.of_int (c*(-8))), Rbp) in
-
-  let rec f (l:uid list) (c:int) = 
-    match l with
-      | x::y -> ("param"^x, g c) :: f y (c+1)
-      | [] -> []
-  in
-
-  let rec h (l:(Ll.uid * Ll.insn) list) (c:int) =
-    match l with
-      | (x, _)::y -> ("kappa"^x, g c) :: h y (c+1)
-      | [] -> []
-  in
-
-  let rec k (l:(string * Ll.block) list) = 
-    match l with
-      | (_, blocks)::y -> block.insns @ k y  
-      | [] -> []
-  in
-
-  let inss = block.insns @ k lbled_blocks in
-
-  (* NOT SURE IF 1 or 0*)
-  let layp = f args 1 in
-
-  let layb = h inss ((List.length layp)+1) in
-
-
-  layp @ layb
-  
-
-
-  
-
-  
+failwith "stack_layout not implemented"
 
 (* The code for the entry-point of a function must do several things:
 
@@ -417,32 +284,8 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
    - the function entry code should allocate the stack storage needed
      to hold all of the local stack slots.
 *)
-
-
-
-
-
-
-
 let compile_fdecl (tdecls:(tid * ty) list) (name:string) ({ f_ty; f_param; f_cfg }:fdecl) : prog =
-  let layout : layout = stack_layout f_param f_cfg in
-  let ctxt : ctxt = {tdecls=tdecls ; layout=layout} in
-
-  let entry = match f_cfg with (b, _) -> b in
-  let prologue = compilePrologue ctxt.layout in
-  let entryC = prologue @ compile_block name ctxt entry in 
-  let blocks = match f_cfg with (_, b) -> b in
-
-  let f (b:string * Ll.block) =
-    match b with 
-      | (x, y) -> compile_lbl_block name x ctxt y 
-  in 
-
-
-
-  let blocksC = List.map f blocks in
-
-  [Asm.gtext name entryC] @ blocksC
+failwith "compile_fdecl unimplemented"
 
 
 
