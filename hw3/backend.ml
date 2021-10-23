@@ -345,7 +345,7 @@ movq    %rsp, %rbp
       let size = size_ty ctxt.tdecls t in
       let incSize = Asm.(Subq, [~$size; ~%Rsp]) in
       (* moves the stack location / pointer as address into Rax *)
-      let ptr = Asm.(Movq, [Ind3 (Lit (Int64.of_int (-(!currStackSize))), Rbp); ~%Rax]) in
+      let ptr = Asm.(Leaq, [Ind3 (Lit (Int64.of_int (-(!currStackSize))), Rbp); ~%Rax]) in
       (* moves the address from RAX to the UID *)
       let movUid = Asm.(Movq, [~%Rax; coolLookup ctxt.layout uid]) in
       currStackSize := !currStackSize + size;

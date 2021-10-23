@@ -7,7 +7,7 @@ main:
 	movq	%rdi, -8(%rbp)
 	movq	%rsi, -16(%rbp)
 	subq	$8, %rsp
-	movq	-48(%rbp), %rax
+	leaq	-48(%rbp), %rax
 	movq	%rax, -24(%rbp)
 	movq	$17, %rax
 	movq	-24(%rbp), %rdi
