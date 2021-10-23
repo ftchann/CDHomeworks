@@ -268,13 +268,7 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       else x1 :: x2 ::  x3 :: x4 :: []
     in
 
-    let load (t:Ll.ty) (opsrc:Ll.operand) : X86.ins list = 
-      let opdst = coolLookup ctxt.layout (uid) in
-      let x1 = compile_operand ctxt Asm.(~%Rax) opsrc in
-      let x2 = Asm.(Movq, [~%Rax; opdst]) in
-      let x3 = Asm.(Movq, [Ind2 Rax; ~%Rax]) in
-      x1 :: x3 :: x2 :: []
-    in
+
 
     let conditionCode (c:Ll.cnd) : (X86.opcode * X86.operand list) =
       match c with
@@ -313,12 +307,46 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       Asm.(Movq, [~%Rax; op]) :: []
     in
 
+
+(*
+movq    %rsp, %rbp
+        subq    $40, %rsp
+        movq    %rdi, -8(%rbp)
+        movq    %rsi, -16(%rbp)
+        subq    $8, %rsp
+        movq    -40(%rbp), %rax
+        movq    %rax, -24(%rbp)
+        movq    $17, %rax
+        movq    -24(%rbp), %rdi
+        movq    %rax, (%rdi) 
+        
+        movq    -24(%rbp), %rax
+        movq    (%rax), %rax 
+
+
+        ----
+        --movq    %rax, -32(%rbp)--
+        
+        
+        
+        movq    -40(%rbp), %rax
+        movq    %rbp, %rsp
+        popq    %rbp
+*) 
+    let load (t:Ll.ty) (opsrc:Ll.operand) : X86.ins list = 
+      let opdst = coolLookup ctxt.layout (uid) in
+      let x1 = compile_operand ctxt Asm.(~%Rax) opsrc in 
+      let x2 = Asm.(Movq, [Ind2 Rax; ~%Rax]) in
+      let x3 = Asm.(Movq, [~%Rax; opdst]) in
+      x1 :: x2 :: x3 :: []
+    in
+
     let allocate (t:Ll.ty) = 
       let size = size_ty ctxt.tdecls t in
       let incSize = Asm.(Subq, [~$size; ~%Rsp]) in
-      (* moves the stack location as address into Rax *)
-      let ptr = Asm.(Movq, [Ind3 (Lit (Int64.of_int (!currStackSize)), Rbp); ~%Rax]) in
-      (* moves the address form RAX to the UID *)
+      (* moves the stack location / pointer as address into Rax *)
+      let ptr = Asm.(Movq, [Ind3 (Lit (Int64.of_int (-(!currStackSize))), Rbp); ~%Rax]) in
+      (* moves the address from RAX to the UID *)
       let movUid = Asm.(Movq, [~%Rax; coolLookup ctxt.layout uid]) in
       currStackSize := !currStackSize + size;
       incSize :: ptr :: movUid :: []
@@ -326,10 +354,10 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
 
 
     let store (t:Ll.ty) (op1:Ll.operand) (op2:Ll.operand) =
-      let size = size_ty ctxt.tdecls t in
       let x1 = compile_operand ctxt Asm.(~%Rax) op1 in
-      let x2 = Asm.(Movq, [~%Rax; getOperand op2 ctxt]) in
-      x1 :: x2 :: []
+      let x2 = Asm.(Movq, [getOperand op2 ctxt; ~%Rdi]) in
+      let x3 = Asm.(Movq, [~%Rax; Ind2 (Rdi)]) in
+      x1 :: x2 :: x3 :: []
     in
 
 
@@ -435,7 +463,7 @@ let compilePrologue (layout:layout) : ins list =
   @ [Subq, [Imm (Lit (Int64.of_int ((List.length layout)*8))); Reg Rsp]] 
   in
 
-  currStackSize := (List.length layout)*8;
+  currStackSize := ((List.length layout)+1)*8;
 
   let rec getIndex a l c = 
     match l with
@@ -531,8 +559,7 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
   let layp = f args 1 in
 
   let layb = uid_layout inss layp in
-
-  (*
+(*
   let fold_helper  (elem:(string * X86.operand)) : string =
     let (a, _) = elem in
     a
@@ -549,8 +576,7 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
     
 
   let s = stringi smap in
-  failwith s;
-*)
+  failwith s;*)
 
   layb
 
