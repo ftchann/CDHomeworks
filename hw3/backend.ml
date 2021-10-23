@@ -177,8 +177,8 @@ let rec size_ty (tdecls:(tid * ty) list) (t:Ll.ty) : int =
   | I1 
   | I64 
   | Ptr _ -> 8
-  | Struct [] -> 0
   | Struct (y::x) -> size_ty tdecls y + size_ty tdecls (Struct x)
+  | Struct [] -> 0
   | Array (x, y) -> x * size_ty tdecls y
   | Namedt x -> size_ty tdecls (lookup tdecls x)
   end
@@ -221,17 +221,52 @@ let compile_gep (ctxt:ctxt) ((t,op) : Ll.ty * Ll.operand) (path: Ll.operand list
     long
   }
 *)
+  let rec getSizeUntil (t:Ll.ty) (i:int) =
+    begin
+    match t with
+    | Struct (x::y) -> 
+      if (i > 0) 
+        then (getSizeUntil (Struct (y)) (i-1) + size_ty ctxt.tdecls x)
+      else 0
+    | Struct ([]) -> 0
+    | _ -> failwith "should never happen"
+    end
+  in
+
+  let rec unName (t:Ll.ty) =
+    match t with
+      | Namedt l -> unName (lookup ctxt.tdecls l)
+      | x -> x
+  in
+
+
+
+  (* let kappa = match t with Ptr t -> getSizeUntil t 2 | _ -> 0 in
+  Printf.printf "\n%d\n" kappa; *)
+
 
   let rec gepify (path: Ll.operand list) =
     begin match path with
       | op::y ->
-         
+        lasttype := unName !lasttype;
+          
         let x1 = compile_operand ctxt Asm.(~%Rdx) op in 
-        let size = size_ty ctxt.tdecls !lasttype in
+        let index = begin match op with 
+            | Const x -> Int64.to_int x
+            | _ -> 5
+        end in
+        let size = begin match !lasttype with
+          | Struct _ -> getSizeUntil !lasttype index 
+          | Ptr t -> lasttype := t;
+        lasttype := unName !lasttype;
+            size_ty ctxt.tdecls t
+          | _ -> size_ty ctxt.tdecls !lasttype
+        end in
         let x2 = Asm.(Imulq, [~$size; ~%Rdx]) in
         let x3 = Asm.(Addq, [~%Rdx; ~%Rax]) in
-
-        (* has to be recursive*)
+        Printf.printf "size is: %d \n" size;
+        (* has to be recursive *)
+        Printf.printf "%s \n" (string_of_ins x1 );
         
         lasttype := begin match !lasttype with 
           | Void -> Void;
@@ -239,15 +274,17 @@ let compile_gep (ctxt:ctxt) ((t,op) : Ll.ty * Ll.operand) (path: Ll.operand list
           | Fun (a, b) -> Fun (a, b);
           | I1 -> I1;
           | I64 -> I64;
-          | Ptr t -> Ptr t;
+          | Ptr t -> t;
           | Struct [] -> Void;
-          | Struct (typlist) -> (
+          | Struct (typlist) -> 
+            (
             match op with 
             | Const x -> List.nth typlist (Int64.to_int x)
-            | _ -> failwith "oof");
+            | _ -> failwith "oof2");
           | Array (_, typ) -> typ
-          | Namedt a -> lookup ctxt.tdecls a;
+          | Namedt a -> failwith "why u name"
         end;
+
         x1 :: x2 :: x3 ::gepify y;
       | [] -> []
     end
@@ -571,18 +608,19 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
   
 
   let inss = block.insns @ k lbled_blocks in
-  
+
+  (*
   let helperstupid ((x, y):(string * Ll.insn)) =
     x
   in
 
-  let newlist = List.map helperstupid inss in
+  let newlist = List.map helperstupid inss in*)
 
 
   let layp = f args 1 in
 
   let layb = uid_layout inss layp in
-
+(*
   (*DEBUG CODE*)
   let fold_helper  (elem:(string * X86.operand)) : string =
     let (a, _) = elem in
@@ -600,7 +638,7 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
     
   let s = stringi newlist in
   Printf.printf "%s" s;
-
+*)
   layb
 
 
