@@ -315,7 +315,7 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
 
     let allocate (t:Ll.ty) = 
       let size = size_ty ctxt.tdecls t in
-      let incSize = Asm.(Movq, [~$size; ~%Rsp]) in
+      let incSize = Asm.(Subq, [~$size; ~%Rsp]) in
       (* moves the stack location as address into Rax *)
       let ptr = Asm.(Movq, [Ind3 (Lit (Int64.of_int (!currStackSize)), Rbp); ~%Rax]) in
       (* moves the address form RAX to the UID *)
@@ -331,8 +331,6 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       let x2 = Asm.(Movq, [~%Rax; getOperand op2 ctxt]) in
       x1 :: x2 :: []
     in
-
-
 
 
     begin match i with
