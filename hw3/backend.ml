@@ -61,6 +61,8 @@ type ctxt = { tdecls : (tid * ty) list
 (* useful for looking up items in tdecls or layouts *)
 let lookup m x = List.assoc x m
 
+let currStackSize = ref 0 
+
 let coolLookup m x = try List.assoc x m
   with Not_found -> try List.assoc ("kappa"^x) m 
   with Not_found -> List.assoc ("param"^x) m
@@ -111,12 +113,12 @@ let compile_operand (ctxt:ctxt) (dest:X86.operand):  Ll.operand -> ins =
       | Gid x -> Asm.(Leaq, [Ind3 (Lbl (Platform.mangle x), Rip); dest])
     end
     
-let getOperand (op:Ll.operand) : X86.operand =
+let getOperand (op:Ll.operand) (ctxt:ctxt) : X86.operand =
   begin match op with 
     | Null -> Asm.(~$0)
     | Const x -> Asm.(~$ (Int64.to_int x))
-    (*| Gid x -> Asm.(Ind1 (Lbl (Platform.mangle x)))*)
-    | _ -> failwith "not allowed I think?"
+    | Gid x -> failwith "idk"
+    | Id uid -> coolLookup ctxt.layout uid
   end
 
 
@@ -262,18 +264,16 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       let opdest = coolLookup ctxt.layout (uid) in
       let x4 = Asm.(Movq, [~%Rax; opdest]) in
       if (op = Lshr || op = Ashr || op = Shl) 
-      then x2 :: Asm.(toX86 op, [getOperand op2; ~%Rax]) :: x4 :: []
+      then x2 :: Asm.(toX86 op, [getOperand op2 ctxt; ~%Rax]) :: x4 :: []
       else x1 :: x2 ::  x3 :: x4 :: []
     in
 
-    let load (t:Ll.ty) (op:Ll.operand) : X86.ins list = 
-      let opdest = coolLookup ctxt.layout (uid) in
-      let x1 = compile_operand ctxt Asm.(~%Rax) op in
-      let x2 = Asm.(Movq, [~%Rax;opdest]) in
+    let load (t:Ll.ty) (opsrc:Ll.operand) : X86.ins list = 
+      let opdst = coolLookup ctxt.layout (uid) in
+      let x1 = compile_operand ctxt Asm.(~%Rax) opsrc in
+      let x2 = Asm.(Movq, [~%Rax; opdst]) in
       let x3 = Asm.(Movq, [Ind2 Rax; ~%Rax]) in
-      match op with 
-      | Gid _ -> x1 :: x3 :: x2 :: []
-      | _ -> x1 :: x2 :: []
+      x1 :: x3 :: x2 :: []
     in
 
     let conditionCode (c:Ll.cnd) : (X86.opcode * X86.operand list) =
@@ -313,13 +313,33 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       Asm.(Movq, [~%Rax; op]) :: []
     in
 
+    let allocate (t:Ll.ty) = 
+      let size = size_ty ctxt.tdecls t in
+      let incSize = Asm.(Movq, [~$size; ~%Rsp]) in
+      (* moves the stack location as address into Rax *)
+      let ptr = Asm.(Movq, [Ind3 (Lit (Int64.of_int (!currStackSize)), Rbp); ~%Rax]) in
+      (* moves the address form RAX to the UID *)
+      let movUid = Asm.(Movq, [~%Rax; coolLookup ctxt.layout uid]) in
+      currStackSize := !currStackSize + size;
+      incSize :: ptr :: movUid :: []
+    in
+
+
+    let store (t:Ll.ty) (op1:Ll.operand) (op2:Ll.operand) =
+      let size = size_ty ctxt.tdecls t in
+      let x1 = compile_operand ctxt Asm.(~%Rax) op1 in
+      let x2 = Asm.(Movq, [~%Rax; getOperand op2 ctxt]) in
+      x1 :: x2 :: []
+    in
+
+
 
 
     begin match i with
       | Binop (op, ty, a , b) -> compile_binop op ty a b
-      | Alloca ty -> failwith "alloca"
+      | Alloca ty -> allocate ty
       | Load (ty, op) -> load ty op
-      | Store (ty, op, op2) -> failwith "store"
+      | Store (ty, op, op2) -> store ty op op2
       | Icmp (cnd, ty, op, op2) -> icmp cnd ty op op2
       | Call (ty, Gid name, tyopl) -> 
         begin
@@ -416,6 +436,8 @@ let compilePrologue (layout:layout) : ins list =
   @ [Movq, [Reg Rsp;Reg Rbp]]
   @ [Subq, [Imm (Lit (Int64.of_int ((List.length layout)*8))); Reg Rsp]] 
   in
+
+  currStackSize := (List.length layout)*8;
 
   let rec getIndex a l c = 
     match l with
@@ -565,6 +587,7 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
 
 
 let compile_fdecl (tdecls:(tid * ty) list) (name:string) ({ f_ty; f_param; f_cfg }:fdecl) : prog =
+  currStackSize := 0;
   let layout : layout = stack_layout f_param f_cfg in
   let ctxt : ctxt = {tdecls=tdecls ; layout=layout} in
 
