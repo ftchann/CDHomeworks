@@ -212,15 +212,11 @@ let rec size_ty (tdecls:(tid * ty) list) (t:Ll.ty) : int =
       by the path so far
 *)
 let compile_gep (ctxt:ctxt) ((t,op) : Ll.ty * Ll.operand) (path: Ll.operand list) : ins list =
+
   let lasttype = ref t in
+
   let first = compile_operand ctxt Asm.(~%Rax) op in
-(*
-  struct {
-    int 
-    float
-    long
-  }
-*)
+
   let rec getSizeUntil (t:Ll.ty) (i:int) =
     begin
     match t with
@@ -239,53 +235,57 @@ let compile_gep (ctxt:ctxt) ((t,op) : Ll.ty * Ll.operand) (path: Ll.operand list
       | x -> x
   in
 
-
-
-  (* let kappa = match t with Ptr t -> getSizeUntil t 2 | _ -> 0 in
-  Printf.printf "\n%d\n" kappa; *)
-
+  let istruct = ref false in
 
   let rec gepify (path: Ll.operand list) =
     begin match path with
-      | op::y ->
+      | (op)::y ->
         lasttype := unName !lasttype;
           
         let x1 = compile_operand ctxt Asm.(~%Rdx) op in 
-        let index = begin match op with 
-            | Const x -> Int64.to_int x
-            | _ -> 5
-        end in
-        let size = begin match !lasttype with
-          | Struct _ -> getSizeUntil !lasttype index 
-          | Ptr t -> lasttype := t;
-        lasttype := unName !lasttype;
-            size_ty ctxt.tdecls t
+
+        let size = 
+
+
+          begin match !lasttype with
+          
+          | Struct _ -> 
+            let index = begin match op with 
+              | Const x -> Int64.to_int x
+              | _ -> failwith "no const in struct"
+            end in
+            istruct := true;
+            getSizeUntil !lasttype index 
+          | Ptr t -> size_ty ctxt.tdecls t
+          | Array (_, t) -> size_ty ctxt.tdecls t
           | _ -> size_ty ctxt.tdecls !lasttype
         end in
-        let x2 = Asm.(Imulq, [~$size; ~%Rdx]) in
-        let x3 = Asm.(Addq, [~%Rdx; ~%Rax]) in
+
+        let x23 = if (!istruct) then (istruct := false; [Asm.(Addq, [~$size; ~%Rax])])
+        else x1 :: [Asm.(Imulq, [~$size; ~%Rdx]); Asm.(Addq, [~%Rdx; ~%Rax])] in
+
         Printf.printf "size is: %d \n" size;
         (* has to be recursive *)
         Printf.printf "%s \n" (string_of_ins x1 );
         
         lasttype := begin match !lasttype with 
-          | Void -> Void;
-          | I8 -> I8;
+          | Void -> Void
+          | I8 -> I8
           | Fun (a, b) -> Fun (a, b);
-          | I1 -> I1;
-          | I64 -> I64;
-          | Ptr t -> t;
-          | Struct [] -> Void;
+          | I1 -> I1
+          | I64 -> I64
+          | Ptr t -> t
+          | Struct [] -> Void
           | Struct (typlist) -> 
             (
             match op with 
             | Const x -> List.nth typlist (Int64.to_int x)
-            | _ -> failwith "oof2");
+            | _ -> failwith "oof2")
           | Array (_, typ) -> typ
           | Namedt a -> failwith "why u name"
         end;
 
-        x1 :: x2 :: x3 ::gepify y;
+        x23 @ gepify y
       | [] -> []
     end
   in
