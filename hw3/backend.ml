@@ -61,6 +61,10 @@ type ctxt = { tdecls : (tid * ty) list
 (* useful for looking up items in tdecls or layouts *)
 let lookup m x = List.assoc x m
 
+let coolLookup m x = try List.assoc x m
+  with Not_found -> try List.assoc ("kappa"^x) m 
+  with Not_found -> List.assoc ("param"^x) m
+
 
 (* compiling operands  ------------------------------------------------------ *)
 
@@ -102,16 +106,8 @@ let compile_operand (ctxt:ctxt) (dest:X86.operand):  Ll.operand -> ins =
     begin match op with 
       | Null -> Asm.(Movq, [~$0 ; dest])
       | Const x -> Asm.(Movq, [~$(Int64.to_int x) ; dest])
-      | Id uid -> (
-        match memberOf ctxt.layout ("kappa"^uid) with 
-        | Some x -> Asm.(Movq, [x; dest])
-        | None -> 
-          (
-            match memberOf ctxt.layout ("param"^uid) with 
-              | Some x -> Asm.(Movq, [x; dest])
-              | None -> Asm.(Movq, [~$(-123456); dest]) 
-          )
-        )
+      | Id uid -> let x = coolLookup ctxt.layout uid in
+                  Asm.(Movq, [x; dest])
       | Gid x -> Asm.(Leaq, [Ind3 (Lbl (Platform.mangle x), Rip); dest])
     end
     
@@ -119,6 +115,7 @@ let getOperand (op:Ll.operand) : X86.operand =
   begin match op with 
     | Null -> Asm.(~$0)
     | Const x -> Asm.(~$ (Int64.to_int x))
+    (*| Gid x -> Asm.(Ind1 (Lbl (Platform.mangle x)))*)
     | _ -> failwith "not allowed I think?"
   end
 
@@ -262,7 +259,7 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       let x1 = compile_operand ctxt (Reg Rdi) op2 in
       let x2 = compile_operand ctxt (Reg Rax) op1 in
       let x3 = Asm.(toX86 op, [~%Rdi ; ~%Rax]) in
-      let opdest = lookup ctxt.layout ("kappa"^uid) in
+      let opdest = coolLookup ctxt.layout ("kappa"^uid) in
       let x4 = Asm.(Movq, [~%Rax; opdest]) in
       if (op = Lshr || op = Ashr || op = Shl) 
       then x2 :: Asm.(toX86 op, [getOperand op2; ~%Rax]) :: x4 :: []
@@ -270,7 +267,7 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
     in
 
     let load (t:Ll.ty) (op:Ll.operand) : X86.ins list = 
-      let opdest = lookup ctxt.layout ("kappa"^uid) in
+      let opdest = coolLookup ctxt.layout ("kappa"^uid) in
       let x1 = compile_operand ctxt Asm.(~%Rax) op in
       let x2 = Asm.(Movq, [~%Rax;opdest]) in
       let x3 = Asm.(Movq, [Ind2 Rax; ~%Rax]) in
@@ -297,7 +294,23 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       x1::x2::x3::x4::x5::[]
     in
 
+    let c = ref 0 in
 
+    let callMover ((x,y):Ll.ty * Ll.operand) = 
+      let op = begin match !c with
+        | 0 -> Reg Rdi
+        | 1 -> Reg Rsi
+        | 2 -> Reg Rdx
+        | 3 -> Reg Rcx
+        | 4 -> Reg R08
+        | 5 -> Reg R09
+        | z -> Ind3 (Lit (Int64.of_int (((z-6)+List.length ctxt.layout)*(-8))), Rbp) 
+      end in
+      c:= !c + 1;
+      (* Move to Rax and then into Stack or whereever *)
+      compile_operand ctxt Asm.(~%Rax) y ::
+      Asm.(Movq, [~%Rax; op]) :: []
+    in
 
 
 
@@ -307,7 +320,20 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       | Load (ty, op) -> load ty op
       | Store (ty, op, op2) -> failwith "store"
       | Icmp (cnd, ty, op, op2) -> icmp cnd ty op op2
-      | Call (ty, op, tyopl) -> failwith "call"
+      | Call (ty, Gid name, tyopl) -> 
+        begin
+          (* first allocate stack for new variables? *)
+          if (List.length tyopl > 6 ) then Asm.[Subq, [~$((List.length tyopl - 6)*8); ~%Rsp]]
+          else [] @
+          (* Push varibles to the right place ""*)
+          List.flatten (List.map callMover tyopl) @
+          (*Asm.[Callq, [getOperand op]]*)
+          (*(compile_operand ctxt Asm.(~%Rax) op :: []) @*)
+          (*Asm.[Callq, [Ind2 (Rax)]]*)
+          Asm.[Callq, [~$$ (Platform.mangle name) ]] @
+          Asm.[Movq, [~%Rax; coolLookup ctxt.layout (uid)]]
+        end
+      | Call _ -> failwith "do we need that?"
       | Bitcast (ty, op, ty2) -> failwith "bitcast"
       | Gep (ty, op, opl) -> failwith "gep"
     end
