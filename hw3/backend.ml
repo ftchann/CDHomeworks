@@ -510,7 +510,7 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
     let newlay = match l with
       | (x, _)::y -> 
         (match memberOf lay ("kappa"^x) with 
-              | None -> ("kappa"^x, g ((List.length lay)+1)) :: lay 
+              | None -> lay @ [("kappa"^x, g ((List.length lay)+1))] 
               | Some kappa -> lay
                 )
       | [] -> lay
@@ -524,17 +524,27 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
 
   let rec k (l:(string * Ll.block) list) = 
     match l with
-      | (_, blocks)::y -> block.insns @ k y  
+      | (_, blocks)::y -> blocks.insns @ k y  
       | [] -> []
   in
 
+  
+
   let inss = block.insns @ k lbled_blocks in
+  
+  let helperstupid ((x, y):(string * Ll.insn)) =
+    x
+  in
+
+  let newlist = List.map helperstupid inss in
+
 
   let layp = f args 1 in
 
   let layb = uid_layout inss layp in
 
-  (* let fold_helper  (elem:(string * X86.operand)) : string =
+  (*DEBUG CODE*)
+  let fold_helper  (elem:(string * X86.operand)) : string =
     let (a, _) = elem in
     a
   in
@@ -544,13 +554,12 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
 
   let rec stringi (l:string list) : string =
     match l with
-    | x::y -> x^(stringi y)
+    | x::y -> x ^ "|" ^(stringi y)
     | [] -> ""
   in 
     
-
-  let s = stringi smap in
-  failwith s; *)
+  let s = stringi newlist in
+  Printf.printf "%s" s;
 
   layb
 
