@@ -328,8 +328,7 @@ let compilePrologue (layout:layout) : ins list =
           else [Movq, [arg_loc (getIndex x para 0) ; Reg Rax]]
               @[Movq, [Reg Rax ; y]] @ f z
 
-          (* NOT NEEDED ONLY FOR DEBUG *)
-        else [Movq, [Imm (Lit 6969L) ; y]] @ f z
+        else f z
       | _ -> []
     end
   in
@@ -366,17 +365,27 @@ let compile_lbl_block fn lbl ctxt blk : elem =
 let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
   let g (c:int) = Ind3 (Lit (Int64.of_int (c*(-8))), Rbp) in
 
-  let rec f (l:uid list) (c:int) = 
+  let rec f (l:uid list) (c:int) : layout = 
     match l with
       | x::y -> ("param"^x, g c) :: f y (c+1)
       | [] -> []
   in
 
-  let rec h (l:(Ll.uid * Ll.insn) list) (c:int) =
-    match l with
-      | (x, _)::y -> ("kappa"^x, g c) :: h y (c+1)
-      | [] -> []
-  in
+  let rec uid_layout (l:(Ll.uid * Ll.insn) list) (lay:layout) : layout =
+    let newlay = match l with
+      | (x, _)::y -> 
+        (match memberOf lay ("kappa"^x) with 
+              | None -> ("kappa"^x, g ((List.length lay)+1)) :: lay 
+              | Some kappa -> lay
+                )
+      | [] -> lay
+    in
+    begin match l with 
+      | _::y -> uid_layout y newlay
+      | [] -> newlay
+    end
+  in 
+    
 
   let rec k (l:(string * Ll.block) list) = 
     match l with
@@ -388,10 +397,30 @@ let stack_layout (args : uid list) ((block, lbled_blocks):cfg) : layout =
 
   let layp = f args 1 in
 
-  let layb = h inss ((List.length layp)+1) in
+  let layb = uid_layout inss layp in
 
+  (*
+  let fold_helper  (elem:(string * X86.operand)) : string =
+    let (a, _) = elem in
+    a
+  in
+  
+  let smap = List.map fold_helper layb;
+  in
 
-  layp @ layb
+  let rec stringi (l:string list) : string =
+    match l with
+    | x::y -> x^(stringi y)
+    | [] -> ""
+  in 
+    
+
+  let s = stringi smap in
+  failwith s;
+*)
+
+  layb
+
   
 
 
