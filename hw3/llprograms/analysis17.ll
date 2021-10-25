@@ -1,4 +1,8 @@
-define i64 @program(i64 %x, i64 %y) {
+define i64 @foo(i64 %p1, i64 %p2) {
+  ret i64 %p1
+}
+
+define i64 @bar(i64 %x, i64 %y) {
   %sx = alloca i64
   store i64 %x, i64* %sx
   %sy = alloca i64
@@ -16,4 +20,9 @@ l1:
   %arg1 = add i64 0, 12
   %v4 = call i64 @foo(i64 %arg1, i64 2)
   ret i64 %v3
+}
+
+define i64 @main(i64 %argc, i8** %arcv) {
+  %res = call i64 @bar(i64 5, i64 9)
+  ret i64 %res
 }

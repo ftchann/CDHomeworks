@@ -1,0 +1,83 @@
+ocamlbuild -clean
+rm -rf output a.out
+ocamlbuild -Is util,x86,ll,grading -libs unix,str,nums main.native -use-menhir
+/home/yann/.opam/4.06.0/bin/ocamldep.opt -modules main.ml > main.ml.depends
+/home/yann/.opam/4.06.0/bin/ocamldep.opt -modules util/assert.mli > util/assert.mli.depends
+/home/yann/.opam/4.06.0/bin/ocamldep.opt -modules driver.ml > driver.ml.depends
+/home/yann/.opam/4.06.0/bin/ocamldep.opt -modules backend.ml > backend.ml.depends
+/home/yann/.opam/4.06.0/bin/ocamldep.opt -modules ll/ll.ml > ll/ll.ml.depends
+/home/yann/.opam/4.06.0/bin/ocamldep.opt -modules util/platform.ml > util/platform.ml.depends
+/home/yann/.opam/4.06.0/bin/ocamldep.opt -modules x86/x86.ml > x86/x86.ml.depends
+/home/yann/.opam/4.06.0/bin/ocamlc.opt -c -I ll -I util -I x86 -o ll/ll.cmo ll/ll.ml
+/home/yann/.opam/4.06.0/bin/ocamlc.opt -c -I util -I ll -I x86 -o util/platform.cmo util/platform.ml
+/home/yann/.opam/4.06.0/bin/ocamlc.opt -c -I x86 -I ll -I util -o x86/x86.cmo x86/x86.ml
+/home/yann/.opam/4.06.0/bin/ocamldep.opt -modules ll/llinterp.ml > ll/llinterp.ml.depends
+/home/yann/.opam/4.06.0/bin/ocamldep.opt -modules ll/llutil.ml > ll/llutil.ml.depends
+/home/yann/.opam/4.06.0/bin/ocamlc.opt -c -I ll -I util -I x86 -o ll/llutil.cmo ll/llutil.ml
+/home/yann/.opam/4.06.0/bin/ocamllex.opt -q ll/lllexer.mll
+/home/yann/.opam/4.06.0/bin/ocamldep.opt -modules ll/lllexer.ml > ll/lllexer.ml.depends
+menhir --raw-depend --ocamldep '/home/yann/.opam/4.06.0/bin/ocamldep.opt -modules' ll/llparser.mly > ll/llparser.mly.depends
+menhir --ocamlc '/home/yann/.opam/4.06.0/bin/ocamlc.opt -I ll -I util -I x86' --infer ll/llparser.mly
+/home/yann/.opam/4.06.0/bin/ocamldep.opt -modules ll/llparser.mli > ll/llparser.mli.depends
+/home/yann/.opam/4.06.0/bin/ocamlc.opt -c -I ll -I util -I x86 -o ll/llparser.cmi ll/llparser.mli
+/home/yann/.opam/4.06.0/bin/ocamlc.opt -c -I ll -I util -I x86 -o backend.cmo backend.ml
+/home/yann/.opam/4.06.0/bin/ocamlc.opt -c -I ll -I util -I x86 -o ll/llinterp.cmo ll/llinterp.ml
+/home/yann/.opam/4.06.0/bin/ocamlc.opt -c -I ll -I util -I x86 -o ll/lllexer.cmo ll/lllexer.ml
+/home/yann/.opam/4.06.0/bin/ocamldep.opt -modules gradedtests.ml > gradedtests.ml.depends
+/home/yann/.opam/4.06.0/bin/ocamlc.opt -c -I util -I ll -I x86 -o util/assert.cmi util/assert.mli
+/home/yann/.opam/4.06.0/bin/ocamlc.opt -c -I ll -I util -I x86 -o driver.cmo driver.ml
+/home/yann/.opam/4.06.0/bin/ocamldep.opt -modules studenttests.ml > studenttests.ml.depends
+/home/yann/.opam/4.06.0/bin/ocamlc.opt -c -I ll -I util -I x86 -o gradedtests.cmo gradedtests.ml
+/home/yann/.opam/4.06.0/bin/ocamlc.opt -c -I ll -I util -I x86 -o studenttests.cmo studenttests.ml
+/home/yann/.opam/4.06.0/bin/ocamlc.opt -c -I ll -I util -I x86 -o main.cmo main.ml
+/home/yann/.opam/4.06.0/bin/ocamldep.opt -modules util/assert.ml > util/assert.ml.depends
+/home/yann/.opam/4.06.0/bin/ocamlopt.opt -c -I ll -I util -I x86 -o ll/ll.cmx ll/ll.ml
+/home/yann/.opam/4.06.0/bin/ocamlopt.opt -c -I util -I ll -I x86 -o util/platform.cmx util/platform.ml
+/home/yann/.opam/4.06.0/bin/ocamlopt.opt -c -I x86 -I ll -I util -o x86/x86.cmx x86/x86.ml
+/home/yann/.opam/4.06.0/bin/ocamlopt.opt -c -I ll -I util -I x86 -o ll/llutil.cmx ll/llutil.ml
+/home/yann/.opam/4.06.0/bin/ocamldep.opt -modules ll/llparser.ml > ll/llparser.ml.depends
+/home/yann/.opam/4.06.0/bin/ocamlopt.opt -c -I ll -I util -I x86 -o ll/llparser.cmx ll/llparser.ml
+/home/yann/.opam/4.06.0/bin/ocamlopt.opt -c -I ll -I util -I x86 -o backend.cmx backend.ml
+/home/yann/.opam/4.06.0/bin/ocamlopt.opt -c -I ll -I util -I x86 -o ll/llinterp.cmx ll/llinterp.ml
+/home/yann/.opam/4.06.0/bin/ocamlopt.opt -c -I ll -I util -I x86 -o ll/lllexer.cmx ll/lllexer.ml
+/home/yann/.opam/4.06.0/bin/ocamlopt.opt -c -I util -I ll -I x86 -o util/assert.cmx util/assert.ml
+/home/yann/.opam/4.06.0/bin/ocamlopt.opt -c -I ll -I util -I x86 -o driver.cmx driver.ml
+/home/yann/.opam/4.06.0/bin/ocamlopt.opt -c -I ll -I util -I x86 -o gradedtests.cmx gradedtests.ml
+/home/yann/.opam/4.06.0/bin/ocamlopt.opt -c -I ll -I util -I x86 -o studenttests.cmx studenttests.ml
+/home/yann/.opam/4.06.0/bin/ocamlopt.opt -c -I ll -I util -I x86 -o main.cmx main.ml
+/home/yann/.opam/4.06.0/bin/ocamlopt.opt unix.cmxa str.cmxa nums.cmxa -I ll -I util -I x86 ll/ll.cmx util/platform.cmx x86/x86.cmx backend.cmx ll/llutil.cmx ll/llinterp.cmx ll/llparser.cmx ll/lllexer.cmx driver.cmx util/assert.cmx gradedtests.cmx studenttests.cmx main.cmx -o main.native
+./main.native --test
+
+Binary Search Tests:
+  OK
+Arithmetic Tests:
+  OK
+C Interoperability / System V AMD64 ABI Tests:
+  OK
+size_ty tests (5/5 points):
+  OK
+arg_loc tests (?/5 points):
+  Hidden
+executed binop tests (5/5 points):
+  OK
+terminator tests (10/10 points):
+  OK
+memory tests (10/10 points):
+  OK
+calling convention tests (15/15 points):
+  OK
+bitcast tests (2/2 points):
+  OK
+gep tests (10/10 points):
+  OK
+large tests (10/10 points):
+  OK
+hidden large tests (?/18 points):
+  Hidden
+io tests (10/10 points):
+  OK
+---------------------------------------------------
+Passed: 61/61
+Failed: 0/61
+Score: 77/77 (given)
+       ?/23 (hidden)

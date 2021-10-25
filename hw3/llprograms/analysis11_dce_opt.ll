@@ -1,6 +1,9 @@
-define i64 @program(i64 %argc, i8** %argv) {
+define i64 @main(i64 %argc, i8** %argv) {
   ret i64 3
 foo:
+  %1 = alloca i64
+  %2 = alloca i64
+  %3 = alloca i64
   %4 = alloca i64
   store i64 1, i64* %4
   %5 = alloca i64

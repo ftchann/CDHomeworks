@@ -18,7 +18,6 @@ let contains s1 s2 =
         try ignore (Str.search_forward re s1 0); true
         with Not_found -> false
 
-
 let compare_clang_to_ours () =
   let open Driver in
   let files = Array.to_list @@ Sys.readdir "llprograms" in
@@ -29,23 +28,35 @@ let compare_clang_to_ours () =
   let files2 = (List.filter (fun s -> Filename.check_suffix s ".ll" && not @@ Sys.is_directory (s)) files2) in
   List.iter (fun f ->
     try 
-      print_endline @@ "Processing file " ^ f;
+      (* print_endline @@ "Processing file " ^ f; *)
 
       let file_content = read_whole_file f in
-      if (String.equal f "llprograms/args1.ll") then 
-        print_endline "Skipping file because it contains @puts - thus is some broken program" else
-      if contains file_content "@ll_puts" then () else 
-      if contains file_content "@program" then begin
-        print_endline "Skipping file because it contains @program - thus is some broken program";
-        ()
-      
-      end else begin
+        
+      if contains file_content "@ll_puts" || contains file_content "@printf"  then begin
+        clang := false;
+        let args = ["arg1" ;"arg2"] in
+        let compilation_result = io_test f args in
+        clang := true;
+        let clang_result = io_test f args in
+        if compilation_result <> clang_result then
+          failwith (f ^"Clang: " ^  clang_result ^", Comp: " ^  compilation_result);
+      end
 
+
+      else 
+      if contains file_content "@ll_ltoa"  then begin
+        print_endline ( f ^ "| Skipping file because it contains @ll_ltoa - thus is some broken program" )
+  
+      end else
+      if contains file_content "@ll_calls_foo"  then begin
+        print_endline ( f ^ "| Skipping file because it contains @ll_calls_foo - thus is some broken program" )
+    
+      end else
 
 
         let files_to_process = [f] in
         let args = "arg1 arg2" in
-
+        
         link_files := ["cinterop.c"; "c_weighted_sum.c"];
         clang := false;
         (* let interpretation_result = int_of_string (Driver.interpret (Driver.parse_ll_file f) []) in *)
@@ -63,7 +74,6 @@ let compare_clang_to_ours () =
           failwith (f ^"Clang: " ^ (string_of_int clang_result) ^", Comp: " ^ (string_of_int compilation_result));
         
         ()
-      end
     with
       | Failure a -> failwith a
       | a -> print_endline ("error happened with file: " ^ f);

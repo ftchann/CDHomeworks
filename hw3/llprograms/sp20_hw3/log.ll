@@ -11,7 +11,7 @@ else:
 }
 
 define i64 @main(i64 %argc, i8** %arcv) {
-   %3 = add i64 16, 0
-   %1 = call i64 @log(i64 %3)
-   ret i64 %1
+   %1 = add i64 16, 0
+   %2 = call i64 @log(i64 %1)
+   ret i64 %2
 }

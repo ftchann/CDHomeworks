@@ -16,10 +16,10 @@ glist:
 sort:
 	pushq	%rbp
 	movq	%rsp, %rbp
-	subq	$160, %rsp
+	subq	$176, %rsp
 	movq	%rdi, -8(%rbp)
 	subq	$8, %rsp
-	leaq	-168(%rbp), %rax
+	leaq	-184(%rbp), %rax
 	movq	%rax, -16(%rbp)
 	movq	$1, %rax
 	movq	-16(%rbp), %rdi
@@ -101,8 +101,8 @@ sort.swap:
 	cmpq	%rdi, %rax
 	movq	$0, %rax
 	setg	%al
-	movq	%rax, -88(%rbp)
-	movq	-88(%rbp), %rax
+	movq	%rax, -128(%rbp)
+	movq	-128(%rbp), %rax
 	cmpq	$1, %rax
 	je	sort.decc
 	jmp	sort.loop
@@ -117,8 +117,8 @@ sort.decc:
 	movq	$1, %rcx
 	movq	-32(%rbp), %rax
 	subq	%rcx, %rax
-	movq	%rax, -96(%rbp)
-	movq	-96(%rbp), %rax
+	movq	%rax, -152(%rbp)
+	movq	-152(%rbp), %rax
 	movq	-16(%rbp), %rdi
 	movq	%rax, (%rdi)
 	jmp	sort.loop
@@ -131,10 +131,10 @@ sort.done:
 	movq	$9, %rdx
 	imulq	$8, %rdx
 	addq	%rdx, %rax
-	movq	%rax, -152(%rbp)
-	movq	-152(%rbp), %rax
+	movq	%rax, -168(%rbp)
+	movq	-168(%rbp), %rax
 	movq	(%rax), %rax
-	movq	%rax, -160(%rbp)
+	movq	%rax, -176(%rbp)
 	movq	$0, %rax
 	movq	%rbp, %rsp
 	popq	%rbp

@@ -113,13 +113,6 @@ let compile_operand (ctxt:ctxt) (dest:X86.operand):  Ll.operand -> ins =
       | Gid x -> Asm.(Leaq, [Ind3 (Lbl (Platform.mangle x), Rip); dest])
     end
     
-let getOperand (op:Ll.operand) (ctxt:ctxt) : X86.operand =
-  begin match op with 
-    | Null -> Asm.(~$0)
-    | Const x -> Asm.(~$ (Int64.to_int x))
-    | Gid g -> Asm.(Ind3 (Lbl (Platform.mangle g), Rip))
-    | Id uid -> coolLookup ctxt.layout uid
-  end
 
 
 (* compiling call  ---------------------------------------------------------- *)
@@ -400,7 +393,7 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
 
     let store (t:Ll.ty) (op1:Ll.operand) (op2:Ll.operand) =
       let x1 = compile_operand ctxt Asm.(~%Rax) op1 in
-      let x2 = Asm.(Movq, [getOperand op2 ctxt; ~%Rdi]) in
+      let x2 = compile_operand ctxt Asm.(~%Rdi) op2 in
       let x3 = Asm.(Movq, [~%Rax; Ind2 (Rdi)]) in
       x1 :: x2 :: x3 :: []
     in
@@ -423,9 +416,6 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
           extend  @
           (* Push varibles to the right place ""*)
           List.flatten (List.map callMover tyopl) @
-          (*Asm.[Callq, [getOperand op]]*)
-          (*(compile_operand ctxt Asm.(~%Rax) op :: []) @*)
-          (*Asm.[Callq, [Ind2 (Rax)]]*)
           Asm.[Callq, [~$$ (Platform.mangle name) ]] @
           Asm.[Movq, [~%Rax; coolLookup ctxt.layout (uid)]]
         end

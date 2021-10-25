@@ -1,4 +1,4 @@
-define i64 @program(i64 %argc, i8** %argv) {
+define i64 @main(i64 %argc, i8** %argv) {
   %1 = add i64 30, 0
   %2 = sub i64 30, 24
   %3 = sub i64 9, 6
@@ -11,6 +11,11 @@ define i64 @program(i64 %argc, i8** %argv) {
   %8 = load i64, i64* %7
   %9 = icmp sgt i64 12, 10
   br i1 1, label %then, label %else
+then:
+  %10 = load i64, i64* %7
+  %11 = sub i64 %10, 10
+  store i64 %11, i64* %7
+  br label %merge
 else:
   %12 = load i64, i64* %7
   %13 = add i64 %12, 10
@@ -21,10 +26,6 @@ merge:
   %15 = sub i64 60, 30
   %16 = mul i64 %14, 30
   ret i64 %16
-then:
-  %10 = load i64, i64* %7
-  %11 = sub i64 %10, 10
-  store i64 %11, i64* %7
-  br label %merge
+
 }
 

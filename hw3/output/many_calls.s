@@ -27,7 +27,7 @@ main:
 	subq	$8, %rsp
 	leaq	-80(%rbp), %rax
 	movq	%rax, -24(%rbp)
-	movq	$9999999, %rax
+	movq	$99999, %rax
 	movq	-24(%rbp), %rdi
 	movq	%rax, (%rdi)
 	jmp	main.loop_condition
