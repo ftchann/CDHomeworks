@@ -53,7 +53,7 @@ let compare_clang_to_ours () =
         Platform.link (List.rev !link_files) !executable_filename;
         let clang_result = run_executable args !executable_filename in
         if compilation_result <> clang_result then
-          failwith ("Clang: " ^ (string_of_int clang_result) ^", Comp: " ^ (string_of_int compilation_result));
+          failwith (f ^"Clang: " ^ (string_of_int clang_result) ^", Comp: " ^ (string_of_int compilation_result));
         
         ()
       end

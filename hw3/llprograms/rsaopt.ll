@@ -48,3 +48,7 @@ _post__33:
   ret i64 %m
 }
 
+define i64 @main(i64 %argc, i8** %arcv) {
+  %r = call i64 @rsa_decrypt(i64 42)
+  ret i64 %r
+}

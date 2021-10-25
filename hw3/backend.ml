@@ -117,7 +117,7 @@ let getOperand (op:Ll.operand) (ctxt:ctxt) : X86.operand =
   begin match op with 
     | Null -> Asm.(~$0)
     | Const x -> Asm.(~$ (Int64.to_int x))
-    | Gid x -> failwith "gid in getoperand"
+    | Gid g -> Asm.(Ind3 (Lbl (Platform.mangle g), Rip))
     | Id uid -> coolLookup ctxt.layout uid
   end
 
@@ -332,14 +332,12 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
           | Or -> Orq
           | Xor -> Xorq
       in  
-      let x1 = compile_operand ctxt (Reg Rdi) op2 in
+      let x1 = compile_operand ctxt (Reg Rcx) op2 in
       let x2 = compile_operand ctxt (Reg Rax) op1 in
-      let x3 = Asm.(toX86 op, [~%Rdi ; ~%Rax]) in
+      let x3 = Asm.(toX86 op, [~%Rcx ; ~%Rax]) in
       let opdest = coolLookup ctxt.layout (uid) in
       let x4 = Asm.(Movq, [~%Rax; opdest]) in
-      if (op = Lshr || op = Ashr || op = Shl) 
-      then x2 :: Asm.(toX86 op, [getOperand op2 ctxt; ~%Rax]) :: x4 :: []
-      else x1 :: x2 ::  x3 :: x4 :: []
+      x1 :: x2 ::  x3 :: x4 :: []
     in
 
     let conditionCode (c:Ll.cnd) : (X86.opcode * X86.operand list) =
@@ -357,7 +355,9 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       let x3 = Asm.(Cmpq, [~%Rdi; ~%Rax]) in
       let x4 = Asm.(Movq, [~$0; ~%Rax]) in
       let x5 = conditionCode c in
-      x1::x2::x3::x4::x5::[]
+      let opdest = coolLookup ctxt.layout (uid) in
+      let x6 = Asm.(Movq, [~%Rax; opdest]) in
+      x1::x2::x3::x4::x5::x6::[]
     in
 
     let c = ref 0 in
@@ -371,7 +371,7 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
         | 3 -> Reg Rcx
         | 4 -> Reg R08
         | 5 -> Reg R09
-        | z -> Ind3 (Lit (Int64.of_int (((!amount - z)+List.length ctxt.layout)*(-8))), Rbp) 
+        | z -> Ind3 (Lit (Int64.of_int ((z-6) * 8 )), Rsp)
       end in
       c:= !c + 1;
       (* Move to Rax and then into Stack or whereever *)
@@ -462,10 +462,11 @@ let compile_terminator (fn:string) (ctxt:ctxt) (t:Ll.terminator) : ins list =
     | Ret (x, y) -> 
       ( match y with 
       | Some y -> Asm.[((compile_operand ctxt (Reg Rax)) y)]
-      | None -> Asm.[(Movq, [~$0; ~%Rax])] (* maybe better to leave empty idk? *)
+      | None -> Asm.[(Movq, [~$0; ~%Rax])] (*maybe better to leave empty idk?*)
       ) @ compileEpilogue
     | Br x -> Asm.[(Jmp, [~$$(mk_lbl fn x)])]
     | Cbr (op, lb1, lb2) -> 
+      Asm.[(compile_operand ctxt Asm.(~%Rax) op)] @
       Asm.[(Cmpq, [~$1;~%Rax])] @ 
       Asm.[(J Eq, [~$$(mk_lbl fn lb1)])] @ 
       Asm.[(Jmp, [~$$(mk_lbl fn lb2)])]
