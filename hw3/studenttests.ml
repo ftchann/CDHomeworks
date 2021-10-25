@@ -32,21 +32,28 @@ let compare_clang_to_ours () =
       print_endline @@ "Processing file " ^ f;
 
       let file_content = read_whole_file f in
+      if (String.equal f "llprograms/args1.ll") then 
+        print_endline "Skipping file because it contains @puts - thus is some broken program" else
+      if contains file_content "@ll_puts" then () else 
       if contains file_content "@program" then begin
         print_endline "Skipping file because it contains @program - thus is some broken program";
         ()
+      
       end else begin
-        let files_to_process = [f; "cinterop.c"; "c_weighted_sum.c"] in
+
+
+
+        let files_to_process = [f] in
         let args = "arg1 arg2" in
 
-        link_files := [];
+        link_files := ["cinterop.c"; "c_weighted_sum.c"];
         clang := false;
         (* let interpretation_result = int_of_string (Driver.interpret (Driver.parse_ll_file f) []) in *)
         process_files files_to_process;
         Platform.link (List.rev !link_files) !executable_filename;
         let compilation_result = run_executable args !executable_filename in
 
-        link_files := [];
+        link_files := ["cinterop.c"; "c_weighted_sum.c"];
         clang := true;
 
         process_files files_to_process;

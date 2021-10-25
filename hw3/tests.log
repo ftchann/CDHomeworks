@@ -1,0 +1,249 @@
+ocamlbuild -clean
+rm -rf output a.out
+ocamlbuild -Is util,x86,ll,grading -libs unix,str,nums main.native -use-menhir
+/home/philipp/.opam/4.06.0/bin/ocamldep.opt -modules main.ml > main.ml.depends
+/home/philipp/.opam/4.06.0/bin/ocamldep.opt -modules util/assert.mli > util/assert.mli.depends
+/home/philipp/.opam/4.06.0/bin/ocamldep.opt -modules driver.ml > driver.ml.depends
+/home/philipp/.opam/4.06.0/bin/ocamldep.opt -modules backend.ml > backend.ml.depends
+/home/philipp/.opam/4.06.0/bin/ocamldep.opt -modules ll/ll.ml > ll/ll.ml.depends
+/home/philipp/.opam/4.06.0/bin/ocamldep.opt -modules util/platform.ml > util/platform.ml.depends
+/home/philipp/.opam/4.06.0/bin/ocamldep.opt -modules x86/x86.ml > x86/x86.ml.depends
+/home/philipp/.opam/4.06.0/bin/ocamlc.opt -c -I ll -I x86 -I util -o ll/ll.cmo ll/ll.ml
+/home/philipp/.opam/4.06.0/bin/ocamlc.opt -c -I util -I x86 -I ll -o util/platform.cmo util/platform.ml
+/home/philipp/.opam/4.06.0/bin/ocamlc.opt -c -I x86 -I util -I ll -o x86/x86.cmo x86/x86.ml
+/home/philipp/.opam/4.06.0/bin/ocamldep.opt -modules ll/llinterp.ml > ll/llinterp.ml.depends
+/home/philipp/.opam/4.06.0/bin/ocamldep.opt -modules ll/llutil.ml > ll/llutil.ml.depends
+/home/philipp/.opam/4.06.0/bin/ocamlc.opt -c -I ll -I x86 -I util -o ll/llutil.cmo ll/llutil.ml
+/home/philipp/.opam/4.06.0/bin/ocamllex.opt -q ll/lllexer.mll
+/home/philipp/.opam/4.06.0/bin/ocamldep.opt -modules ll/lllexer.ml > ll/lllexer.ml.depends
+menhir --raw-depend --ocamldep '/home/philipp/.opam/4.06.0/bin/ocamldep.opt -modules' ll/llparser.mly > ll/llparser.mly.depends
+menhir --ocamlc '/home/philipp/.opam/4.06.0/bin/ocamlc.opt -I ll -I x86 -I util' --infer ll/llparser.mly
+/home/philipp/.opam/4.06.0/bin/ocamldep.opt -modules ll/llparser.mli > ll/llparser.mli.depends
+/home/philipp/.opam/4.06.0/bin/ocamlc.opt -c -I ll -I x86 -I util -o ll/llparser.cmi ll/llparser.mli
+/home/philipp/.opam/4.06.0/bin/ocamlc.opt -c -I x86 -I util -I ll -o backend.cmo backend.ml
+/home/philipp/.opam/4.06.0/bin/ocamlc.opt -c -I ll -I x86 -I util -o ll/llinterp.cmo ll/llinterp.ml
+/home/philipp/.opam/4.06.0/bin/ocamlc.opt -c -I ll -I x86 -I util -o ll/lllexer.cmo ll/lllexer.ml
+/home/philipp/.opam/4.06.0/bin/ocamldep.opt -modules gradedtests.ml > gradedtests.ml.depends
+/home/philipp/.opam/4.06.0/bin/ocamlc.opt -c -I util -I x86 -I ll -o util/assert.cmi util/assert.mli
+/home/philipp/.opam/4.06.0/bin/ocamlc.opt -c -I x86 -I util -I ll -o driver.cmo driver.ml
+/home/philipp/.opam/4.06.0/bin/ocamldep.opt -modules studenttests.ml > studenttests.ml.depends
+/home/philipp/.opam/4.06.0/bin/ocamlc.opt -c -I x86 -I util -I ll -o gradedtests.cmo gradedtests.ml
+/home/philipp/.opam/4.06.0/bin/ocamlc.opt -c -I x86 -I util -I ll -o studenttests.cmo studenttests.ml
+/home/philipp/.opam/4.06.0/bin/ocamlc.opt -c -I x86 -I util -I ll -o main.cmo main.ml
+/home/philipp/.opam/4.06.0/bin/ocamldep.opt -modules util/assert.ml > util/assert.ml.depends
+/home/philipp/.opam/4.06.0/bin/ocamlopt.opt -c -I ll -I x86 -I util -o ll/ll.cmx ll/ll.ml
+/home/philipp/.opam/4.06.0/bin/ocamlopt.opt -c -I util -I x86 -I ll -o util/platform.cmx util/platform.ml
+/home/philipp/.opam/4.06.0/bin/ocamlopt.opt -c -I x86 -I util -I ll -o x86/x86.cmx x86/x86.ml
+/home/philipp/.opam/4.06.0/bin/ocamlopt.opt -c -I ll -I x86 -I util -o ll/llutil.cmx ll/llutil.ml
+/home/philipp/.opam/4.06.0/bin/ocamldep.opt -modules ll/llparser.ml > ll/llparser.ml.depends
+/home/philipp/.opam/4.06.0/bin/ocamlopt.opt -c -I ll -I x86 -I util -o ll/llparser.cmx ll/llparser.ml
+/home/philipp/.opam/4.06.0/bin/ocamlopt.opt -c -I x86 -I util -I ll -o backend.cmx backend.ml
+/home/philipp/.opam/4.06.0/bin/ocamlopt.opt -c -I ll -I x86 -I util -o ll/llinterp.cmx ll/llinterp.ml
+/home/philipp/.opam/4.06.0/bin/ocamlopt.opt -c -I ll -I x86 -I util -o ll/lllexer.cmx ll/lllexer.ml
+/home/philipp/.opam/4.06.0/bin/ocamlopt.opt -c -I util -I x86 -I ll -o util/assert.cmx util/assert.ml
+/home/philipp/.opam/4.06.0/bin/ocamlopt.opt -c -I x86 -I util -I ll -o driver.cmx driver.ml
+/home/philipp/.opam/4.06.0/bin/ocamlopt.opt -c -I x86 -I util -I ll -o gradedtests.cmx gradedtests.ml
+/home/philipp/.opam/4.06.0/bin/ocamlopt.opt -c -I x86 -I util -I ll -o studenttests.cmx studenttests.ml
+/home/philipp/.opam/4.06.0/bin/ocamlopt.opt -c -I x86 -I util -I ll -o main.cmx main.ml
+/home/philipp/.opam/4.06.0/bin/ocamlopt.opt unix.cmxa str.cmxa nums.cmxa -I ll -I util -I x86 ll/ll.cmx util/platform.cmx x86/x86.cmx backend.cmx ll/llutil.cmx ll/llinterp.cmx ll/llparser.cmx ll/lllexer.cmx driver.cmx util/assert.cmx gradedtests.cmx studenttests.cmx main.cmx -o main.native
+./main.native --test
+Processing file llprograms/sp20_hw3/ackermann.ll
+Processing file llprograms/sp20_hw3/another_io_test.ll
+error happened with file: llprograms/sp20_hw3/another_io_test.ll
+Platform.PlatformError("clang -S -O1 -Wall -Wno-override-module -Wno-unused-command-line-argument -mstack-alignment=8  -o output/another_io_test_1.s llprograms/sp20_hw3/another_io_test.ll", "Exited with status 1.")
+Processing file llprograms/sp20_hw3/countsort.ll
+Processing file llprograms/sp20_hw3/det3x3.ll
+Processing file llprograms/sp20_hw3/editdistance.ll
+Processing file llprograms/sp20_hw3/fibonacci.ll
+Processing file llprograms/sp20_hw3/find_max.ll
+Processing file llprograms/sp20_hw3/fp32lite.ll
+Processing file llprograms/sp20_hw3/gnome_sort.ll
+error happened with file: llprograms/sp20_hw3/gnome_sort.ll
+Platform.PlatformError("clang -S -O1 -Wall -Wno-override-module -Wno-unused-command-line-argument -mstack-alignment=8  -o output/gnome_sort_1.s llprograms/sp20_hw3/gnome_sort.ll", "Exited with status 1.")
+Processing file llprograms/sp20_hw3/insertion.ll
+Processing file llprograms/sp20_hw3/lcs.ll
+Processing file llprograms/sp20_hw3/log.ll
+error happened with file: llprograms/sp20_hw3/log.ll
+Platform.PlatformError("clang -S -O1 -Wall -Wno-override-module -Wno-unused-command-line-argument -mstack-alignment=8  -o output/log_1.s llprograms/sp20_hw3/log.ll", "Exited with status 1.")
+Processing file llprograms/sp20_hw3/many_calls.ll
+error happened with file: llprograms/sp20_hw3/many_calls.ll
+Platform.PlatformError("clang -S -O1 -Wall -Wno-override-module -Wno-unused-command-line-argument -mstack-alignment=8  -o output/many_calls_1.s llprograms/sp20_hw3/many_calls.ll", "Exited with status 1.")
+Processing file llprograms/sp20_hw3/ncr.ll
+Processing file llprograms/sp20_hw3/our_test.ll
+error happened with file: llprograms/sp20_hw3/our_test.ll
+Platform.PlatformError("clang -S -O1 -Wall -Wno-override-module -Wno-unused-command-line-argument -mstack-alignment=8  -o output/our_test_1.s llprograms/sp20_hw3/our_test.ll", "Exited with status 1.")
+Processing file llprograms/sp20_hw3/quicksort.ll
+Initial array: 4 1 50 50 7 0 5 10 9 11 0 100 3 8; Sorted array: 0 0 1 3 4 5 7 8 9 10 11 50 50 100Initial array: 4 1 50 50 7 0 5 10 9 11 0 100 3 8; Sorted array: 0 0 1 3 4 5 7 8 9 10 11 50 50 100Processing file llprograms/sp20_hw3/slowsort.ll
+Processing file llprograms/sp20_hw3/sum_half_list.ll
+Processing file llprograms/sp20_hw3/tarjans_toposort.ll
+Processing file llprograms/sp20_hw3/tree_search.ll
+Processing file llprograms/add.ll
+Processing file llprograms/add_twice.ll
+Processing file llprograms/alloca1.ll
+Processing file llprograms/alloca2.ll
+Processing file llprograms/analysis1.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis10.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis10_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis10_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis11.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis11_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis11_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis12.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis12_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis12_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis13.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis13_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis13_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis14.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis14_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis14_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis15.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis15_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis15_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis16.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis16_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis16_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis17.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis17_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis17_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis18.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis18_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis18_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis19.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis19_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis19_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis1_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis1_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis2.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis2_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis2_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis3.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis3_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis3_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis4.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis4_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis4_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis5.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis5_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis5_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis6.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis6_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis6_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis7.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis7_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis7_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis8.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis8_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis8_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis9.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis9_cf_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/analysis9_dce_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/and.ll
+Processing file llprograms/args1.ll
+arg1arg2
+arg1arg2
+Processing file llprograms/arith_combo.ll
+Processing file llprograms/arith_combo_dce.ll
+Processing file llprograms/arith_combo_fold.ll
+Processing file llprograms/ashr.ll
+Processing file llprograms/ashu_ian_opt.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/binarysearch.ll
+Processing file llprograms/binary_gcd.ll
+Processing file llprograms/bitcast1.ll
+Processing file llprograms/br1.ll
+Processing file llprograms/br2.ll
+Processing file llprograms/call.ll
+Processing file llprograms/call1.ll
+Processing file llprograms/call2.ll
+Processing file llprograms/call3.ll
+Processing file llprograms/call4.ll
+Processing file llprograms/call5.ll
+Processing file llprograms/call6.ll
+Processing file llprograms/call7.ll
+Processing file llprograms/call8.ll
+Processing file llprograms/callback1.ll
+38
+38
+Processing file llprograms/cbr.ll
+Processing file llprograms/cbr1.ll
+Processing file llprograms/cbr2.ll
+Processing file llprograms/cbr3.ll
+Processing file llprograms/certified_random_number_generator.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/certified_random_number_generator_soln.ll
+Skipping file because it contains @program - thus is some broken program
+Processing file llprograms/duplicate_factorial.ll
+Processing file llprograms/duplicate_lbl.ll
+Processing file llprograms/euclid.ll
+Processing file llprograms/factorial.ll
+Processing file llprograms/factrect.ll
+Processing file llprograms/gcd_euclidian.ll
+Processing file llprograms/gep1.ll
+Processing file llprograms/gep10.ll
+Processing file llprograms/gep2.ll
+Processing file llprograms/gep3.ll
+Processing file llprograms/gep4.ll
+Processing file llprograms/gep5.ll
+Processing file llprograms/gep6.ll
+Processing file llprograms/gep7.ll
+Processing file llprograms/gep8.ll
+Processing file llprograms/gep9.ll
+Makefile:5: recipe for target 'test' failed
