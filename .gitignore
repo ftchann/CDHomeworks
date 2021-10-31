@@ -10,7 +10,7 @@
 
 # ocamlbuild working directory
 **_build/
-
+**/output
 # ocamlbuild targets
 **.byte
 **.native

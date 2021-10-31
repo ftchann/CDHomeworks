@@ -382,7 +382,6 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
 
     let allocate (t:Ll.ty) = 
       let size = size_ty ctxt.tdecls t in
-      let size = if ((size mod 16) = 0) then size else (size + 8) in
       let incSize = Asm.(Subq, [~$size; ~%Rsp]) in
       (* moves the stack location / pointer as address into Rax *)
       let ptr = Asm.(Leaq, [Ind3 (Lit (Int64.of_int (-(!currStackSize))), Rbp); ~%Rax]) in
@@ -409,11 +408,16 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       | Call (ty, Gid name, tyopl) -> 
         begin
           amount := List.length tyopl;
+          let padding = if ((!currStackSize + (!amount - 6)*8) mod 16 = 0) then [] else Asm.[Subq, [~$s; ~%Rsp]] in
           (* first allocate stack for new variables? *)
           let extend = if (!amount > 6 ) 
-            then Asm.[Subq, [~$((!amount - 6)*8); ~%Rsp]]
+            then 
+              let s = ((!amount - 6)*8) in
+            currStackSize := !currStackSize + s;
+              Asm.[Subq, [~$s; ~%Rsp]]
             else []
           in
+          padding @
           extend  @
           (* Push varibles to the right place ""*)
           List.flatten (List.map callMover tyopl) @
