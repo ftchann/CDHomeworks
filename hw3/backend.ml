@@ -407,8 +407,11 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
       | Icmp (cnd, ty, op, op2) -> icmp cnd ty op op2
       | Call (ty, Gid name, tyopl) -> 
         begin
+          let previous = !currStackSize in
           amount := List.length tyopl;
-          let padding = if ((!currStackSize + (!amount - 6)*8) mod 16 = 0) then [] else Asm.[Subq, [~$s; ~%Rsp]] in
+          let kappa = if (!amount > 6) then (!amount - 6) else 0 in
+          let padding = if ((!currStackSize-8 + (kappa)*8) mod 16 = 0) then [] else 
+            (currStackSize:= !currStackSize+8;Asm.[Subq, [~$8; ~%Rsp]]) in
           (* first allocate stack for new variables? *)
           let extend = if (!amount > 6 ) 
             then 
@@ -417,12 +420,13 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
               Asm.[Subq, [~$s; ~%Rsp]]
             else []
           in
+          let plusStack = Asm.[Addq, [~$(!currStackSize-previous); ~%Rsp]] in
           padding @
           extend  @
           (* Push varibles to the right place ""*)
           List.flatten (List.map callMover tyopl) @
           Asm.[Callq, [~$$ (Platform.mangle name) ]] @
-          Asm.[Movq, [~%Rax; coolLookup ctxt.layout (uid)]]
+          Asm.[Movq, [~%Rax; coolLookup ctxt.layout (uid)]] @ plusStack
         end
       | Call _ -> failwith "do we need that?"
       | Bitcast (ty, op, ty2) -> compile_operand ctxt Asm.(~%Rax) op :: 
