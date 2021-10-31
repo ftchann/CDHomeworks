@@ -382,6 +382,7 @@ let compile_insn (ctxt:ctxt) ((uid:uid), (i:Ll.insn)) : X86.ins list =
 
     let allocate (t:Ll.ty) = 
       let size = size_ty ctxt.tdecls t in
+      let size = if ((size mod 16) = 0) then size else (size + 8) in
       let incSize = Asm.(Subq, [~$size; ~%Rsp]) in
       (* moves the stack location / pointer as address into Rax *)
       let ptr = Asm.(Leaq, [Ind3 (Lit (Int64.of_int (-(!currStackSize))), Rbp); ~%Rax]) in
