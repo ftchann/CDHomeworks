@@ -128,6 +128,13 @@ let typ_of_binop : Ast.binop -> Ast.ty * Ast.ty * Ast.ty = function
 let typ_of_unop : Ast.unop -> Ast.ty * Ast.ty = function
   | Neg | Bitnot -> (TInt, TInt)
   | Lognot       -> (TBool, TBool)
+let typ_of_global_expr : Ast.exp -> Ast.ty = function
+  | CNull _ -> failwith "non function void"
+  | CBool _ -> TBool
+  | CInt _  -> TInt
+  | CStr _  -> TRef RString
+  | CArr (t, _) -> TRef (RArray t)
+  | _ -> failwith "non global expr" 
 
 (* Compiler Invariants
 
@@ -305,8 +312,12 @@ let oat_alloc_array (t:Ast.ty) (size:Ll.operand) : Ll.ty * operand * stream =
 *)
 
 let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
-  failwith "cmp_exp unimplemented"
+  match exp.elt with
+  | CInt i -> (I64, Ll.Const i, [])
+  | _ -> failwith "cmp_exp: not implemented"
+  
 
+  
 (* Compile a statement in context c with return typ rt. Return a new context, 
    possibly extended with new local bindings, and the instruction stream
    implementing the statement.
@@ -335,7 +346,17 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
  *)
 
 let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
-  failwith "cmp_stmt not implemented"
+  let el_l = match stmt.elt with
+    | Ret exp_opt -> begin match exp_opt with
+                     | None -> [T (Ll.Ret (Void, None))]
+                     | Some exp -> 
+                        let ty, op, s = cmp_exp c exp in
+                        [T (Ll.Ret (ty, Some op))]
+                
+                      end
+    | _ -> failwith "cmp_stmt unimplemented"
+  in
+  (c, el_l)
 
 (* Compile a series of statements *)
 and cmp_block (c:Ctxt.t) (rt:Ll.ty) (stmts:Ast.block) : Ctxt.t * stream =
@@ -366,7 +387,13 @@ let cmp_function_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
    in well-formed programs. (The constructors starting with C). 
 *)
 let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
-  failwith "cmp_global_ctxt unimplemented"
+  List.fold_left (fun c -> function
+    | Gvdecl { elt={name ; init } }->
+      let ast_ty = typ_of_global_expr init.elt in
+      let ty = cmp_ty ast_ty in
+      Ctxt.add c name (ty, Gid name)
+    | _ -> c
+  ) c p
 
 (* Compile a function declaration in global context c. Return the LLVMlite cfg
    and a list of global declarations containing the string literals appearing
@@ -380,8 +407,30 @@ let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
    5. Use cfg_of_stream to produce a LLVMlite cfg from 
  *)
 
+let fdecl_helper (a: Ctxt.t * Ll.uid list * Ll.ty list * stream) (b:(ty *  id)) : (Ctxt.t * Ll.uid list * Ll.ty list * stream) =
+  let c, uid_l, typ_p, code = a in
+  let ty, id = b in
+  let ll_ty = cmp_ty ty in
+
+  let allc = gensym "allc" in
+  let allc_op = Ll.Id allc in
+  let new_code = code >@ [I (allc, Ll.Alloca ll_ty)] >@ [I (allc, Ll.Store (ll_ty, Ll.Id id, allc_op))] in
+  let new_c = Ctxt.add c id (Ll.Ptr ll_ty, allc_op) in
+  (new_c, uid_l @ [id] , typ_p @ [ll_ty], new_code)
+    
+
+
 let cmp_fdecl (c:Ctxt.t) (f:Ast.fdecl node) : Ll.fdecl * (Ll.gid * Ll.gdecl) list =
-  failwith "cmp_fdecl not implemented"
+  let args = f.elt.args in
+  let rtyp = f.elt.frtyp in
+  let body = f.elt.body in
+  let new_c, uid_l, typ_l, code = List.fold_left fdecl_helper (c, [], [], []) args in
+  let ll_ret_typ = cmp_ret_ty rtyp in
+  let new_c, ll_block = cmp_block new_c ll_ret_typ body in
+  let cfg, globals = cfg_of_stream (code >@ ll_block) in
+  let fty = (typ_l, ll_ret_typ) in
+  let fdecl = {f_ty = fty; f_param = uid_l; f_cfg = cfg} in
+  (fdecl, globals)
 
 (* Compile a global initializer, returning the resulting LLVMlite global
    declaration, and a list of additional global declarations.
