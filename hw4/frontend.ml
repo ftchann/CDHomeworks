@@ -310,10 +310,51 @@ let oat_alloc_array (t:Ast.ty) (size:Ll.operand) : Ll.ty * operand * stream =
      (CArr) and the (NewArr) expressions
 
 *)
+let cmp_binop (op:Ast.binop) (ty:Ll.ty) (o1:Ll.operand) (o2:Ll.operand): Ll.insn =
+  let ins_bop op = Binop(op, ty, o1, o2) in
+  let ins_cnd op = Icmp(op, ty, o1, o2) in
+  match op with
+  | Ast.Add  -> ins_bop Ll.Add
+  | Ast.Sub  -> ins_bop Ll.Sub
+  | Ast.Mul  -> ins_bop Ll.Mul
+  | Ast.Shl  -> ins_bop Ll.Shl
+  | Ast.Shr  -> ins_bop Ll.Lshr
+  | Ast.Sar  -> ins_bop Ll.Ashr
+  | Ast.IAnd | Ast.And -> ins_bop Ll.And
+  | Ast.IOr  | Ast.Or  -> ins_bop Ll.Or
+  
+  | Ast.Eq   -> ins_cnd Ll.Eq
+  | Ast.Neq  -> ins_cnd Ll.Ne
+  | Ast.Lt   -> ins_cnd Ll.Slt
+  | Ast.Lte  -> ins_cnd Ll.Sle
+  | Ast.Gt   -> ins_cnd Ll.Sgt
+  | Ast.Gte  -> ins_cnd Ll.Sge
+
 
 let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
   match exp.elt with
-  | CInt i -> (I64, Ll.Const i, [])
+  | CInt i        -> (I64, Ll.Const i, [])
+  | CBool true    -> (I1, Ll.Const 1L, [])
+  | CBool false   -> (I1, Ll.Const 0L, [])
+  | Bop (op, exp1, exp2) -> 
+    let _, o1, s1 = cmp_exp c exp1 in
+    let _, o2, s2 = cmp_exp c exp2 in
+    let _, _, ret_ty = typ_of_binop op in 
+    let ll_ty = cmp_ty ret_ty in
+    let ans_id = gensym "ans" in
+    let ll_ins = cmp_binop op ll_ty o1 o2 in
+    (ll_ty, Ll.Id ans_id, s1 >@ s2 >:: I (ans_id, ll_ins))
+  | Uop (op, exp) ->
+    let ty, o, s = cmp_exp c exp in
+    let ll_ins = match op with
+      | Ast.Lognot -> Binop(Ll.Xor, ty, o, o)
+      | Ast.Neg    -> Binop(Ll.Sub, ty, Ll.Const 0L, o)
+      (* Minus one is OxFFFFFF*)
+      | Ast.Bitnot -> Binop(Ll.Xor, ty, Ll.Const Int64.minus_one, o)
+    in
+    let ans_id = gensym "ans" in
+    (ty, o, s >:: I (ans_id, ll_ins))
+
   | _ -> failwith "cmp_exp: not implemented"
   
 
@@ -347,13 +388,19 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
 
 let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
   let el_l = match stmt.elt with
+
+
     | Ret exp_opt -> begin match exp_opt with
                      | None -> [T (Ll.Ret (Void, None))]
                      | Some exp -> 
-                        let ty, op, s = cmp_exp c exp in
-                        [T (Ll.Ret (ty, Some op))]
+                        let ty, op, code = cmp_exp c exp in
+                        (code >:: T (Ll.Ret (ty, Some op)))
                 
                       end
+    | Decl (id, exp) -> 
+                        let s_id = gensym id in
+                        let ty, op, code = cmp_exp c exp in
+                        (code >:: ( E (s_id,(Ll.Alloca ty))) >:: (I ("", Ll.Store (ty, op, Ll.Id s_id))))
     | _ -> failwith "cmp_stmt unimplemented"
   in
   (c, el_l)
@@ -414,7 +461,7 @@ let fdecl_helper (a: Ctxt.t * Ll.uid list * Ll.ty list * stream) (b:(ty *  id)) 
 
   let allc = gensym "allc" in
   let allc_op = Ll.Id allc in
-  let new_code = code >@ [I (allc, Ll.Alloca ll_ty)] >@ [I (allc, Ll.Store (ll_ty, Ll.Id id, allc_op))] in
+  let new_code = code >@ [I (allc, Ll.Alloca ll_ty)] >@ [I ("", Ll.Store (ll_ty, Ll.Id id, allc_op))] in
   let new_c = Ctxt.add c id (Ll.Ptr ll_ty, allc_op) in
   (new_c, uid_l @ [id] , typ_p @ [ll_ty], new_code)
     
