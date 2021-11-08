@@ -129,7 +129,7 @@ let typ_of_unop : Ast.unop -> Ast.ty * Ast.ty = function
   | Neg | Bitnot -> (TInt, TInt)
   | Lognot       -> (TBool, TBool)
 let typ_of_global_expr : Ast.exp -> Ast.ty = function
-  | CNull _ -> failwith "non function void"
+  | CNull r -> TRef r
   | CBool _ -> TBool
   | CInt _  -> TInt
   | CStr _  -> TRef RString
@@ -363,12 +363,11 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
       | Ptr t ->
         let ans_id = gensym "ans" in
         (t, Ll.Id ans_id, [ I (ans_id, Load(ty, op)) ])
-      | _ -> failwith "not a pointer"  
+      | _ -> failwith "not a pointer dfdf"  
     end
 
   | CArr (ty, elems) ->
     let len = Ll.Const ( Int64.of_int @@ List.length elems )in
-    (* let arr_ty_constr = Ll.Struct  *)
     let ty, op, code1 = oat_alloc_array ty len in 
     let _, code2 = List.fold_left (fun (i, code_l) elem ->
       let elem_ty, elem_op, code = cmp_exp c elem in
@@ -378,7 +377,6 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
         | _ -> failwith "not a pointer"
       in
       let gep_ins = I (elem_ptr, Gep(ty, op, [Ll.Const 0L ; Ll.Const 1L ; Ll.Const i])) in
-      (* Idk if needed: update length field*)
       let s_ins = I ("", Store(elem_ty, elem_op, Ll.Id elem_ptr )) in
       Int64.succ i, code_l >@ code >:: gep_ins >:: s_ins
     ) (0L, []) elems in
@@ -548,7 +546,7 @@ let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
     | Gvdecl { elt={name ; init } }->
       let ast_ty = typ_of_global_expr init.elt in
       let ty = cmp_ty ast_ty in
-      Ctxt.add c name (ty, Gid name)
+      Ctxt.add c name (Ptr ty, Gid name)
     | _ -> c
   ) c p
 
@@ -604,7 +602,26 @@ let cmp_fdecl (c:Ctxt.t) (f:Ast.fdecl node) : Ll.fdecl * (Ll.gid * Ll.gdecl) lis
 *)
 
 let rec cmp_gexp c (e:Ast.exp node) : Ll.gdecl * (Ll.gid * Ll.gdecl) list =
-  failwith "cmp_gexp not implemented"
+  begin match e.elt with 
+  | CNull rty -> (cmp_ty (TRef rty), Ll.GNull),[]
+  | CBool b -> (I1, if b then GInt 1L else GInt 0L), []
+  | CInt i -> (I64, GInt i), []
+  | CArr (ty, elems) -> 
+    let len = List.length elems in
+    let elem_ty = cmp_ty ty in
+    let arr_ty = Struct[I64; Array(len, elem_ty)] in
+    let t = Ptr (Struct[I64; Array(0, elem_ty)]) in
+    let temp = (List.map (cmp_gexp c) elems) in
+    let arr_l_elem = List.map (fun (i,j) -> i) temp  in 
+    let garr = GArray arr_l_elem in
+    let arr_name = (gensym "global_arr") in
+    let gstruct = GStruct [ (I64, GInt (Int64.of_int len)) ; (  Array(len, elem_ty), garr)] in
+    let arr_struc = (arr_name, ( arr_ty ,gstruct )) in
+    let x = GBitcast (Ptr arr_ty, GGid arr_name , t) in
+    (t, x), [arr_struc]
+
+  | _ -> failwith "unimplemented"
+  end
 
 (* Oat internals function context ------------------------------------------- *)
 let internals = [
