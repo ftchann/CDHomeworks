@@ -1,5 +1,8 @@
-global arr = new int[]{1, 2, 3, 4};
+int f(int a) {
+  return 5;
+}
 
-int program(int argc, string[] args) {
-  return arr[2];
+int program (int argc, string[] argv) {
+  var x = f(5);
+  return x;
 }

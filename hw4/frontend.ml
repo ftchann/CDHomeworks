@@ -128,13 +128,6 @@ let typ_of_binop : Ast.binop -> Ast.ty * Ast.ty * Ast.ty = function
 let typ_of_unop : Ast.unop -> Ast.ty * Ast.ty = function
   | Neg | Bitnot -> (TInt, TInt)
   | Lognot       -> (TBool, TBool)
-let typ_of_global_expr : Ast.exp -> Ast.ty = function
-  | CNull r -> TRef r
-  | CBool _ -> TBool
-  | CInt _  -> TInt
-  | CStr _  -> TRef RString
-  | CArr (t, _) -> TRef (RArray t)
-  | _ -> failwith "non global expr" 
 
 (* Compiler Invariants
 
@@ -333,6 +326,7 @@ let cmp_binop (op:Ast.binop) (ty:Ll.ty) (o1:Ll.operand) (o2:Ll.operand): Ll.insn
 
 let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
   match exp.elt with
+  | CNull rt      -> (cmp_ty (TRef rt), Null , [])
   | CInt i        -> (I64, Ll.Const i, [])
   | CBool true    -> (I1, Ll.Const 1L, [])
   | CBool false   -> (I1, Ll.Const 0L, [])
@@ -372,15 +366,22 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
     let _, code2 = List.fold_left (fun (i, code_l) elem ->
       let elem_ty, elem_op, code = cmp_exp c elem in
       let elem_ptr = gensym "ind" in
-      let _ = match ty with
-        |  Ptr t -> ()
-        | _ -> failwith "not a pointer"
-      in
       let gep_ins = I (elem_ptr, Gep(ty, op, [Ll.Const 0L ; Ll.Const 1L ; Ll.Const i])) in
       let s_ins = I ("", Store(elem_ty, elem_op, Ll.Id elem_ptr )) in
       Int64.succ i, code_l >@ code >:: gep_ins >:: s_ins
     ) (0L, []) elems in
     (ty, op, code1 >@ code2)
+  | CStr s ->
+    let str_name = gensym "str" in
+    let ans_id = gensym "ans" in
+    let len = String.length s in
+    (* I8 are Characters*)
+    let str_ty = Array (len + 1, I8) in
+    let g_str = GString s in
+    let str_struc =  (str_ty, g_str) in
+    let elt_strg = G(str_name, str_struc) in
+    let gep_ins = I (ans_id, (Gep(Ptr str_ty, (Ll.Gid str_name), [Ll.Const 0L ; Ll.Const 0L]))) in
+    Ptr(I8), (Ll.Id ans_id) , [elt_strg ; gep_ins]
   | Index(arr, i) ->
     let arr_ty, arr_op, arr_code = cmp_exp c arr in
     let i_ty, i_op, i_code = cmp_exp c i in
@@ -394,7 +395,37 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
     (ans_ty, Ll.Id ans_id, arr_code >@ i_code >:: gep_ins  >:: l_ins)
 
     
-  | _ -> failwith "cmp_exp: not implemented"
+  | NewArr (TInt, exp)  -> 
+    let _, len, code1 = cmp_exp c exp in
+    let ty, op, code2 = oat_alloc_array TInt len in 
+    (ty, op, code1 >@ code2)
+
+  | NewArr (TBool, exp) ->
+    let _, len, code1 = cmp_exp c exp in
+    let ty, op, code2 = oat_alloc_array TBool len in 
+    (ty, op, code1 >@ code2)
+  | Call (exp, args) -> 
+    let ty, op, code = cmp_exp c exp in
+    let ty_l, rt =
+      match ty with
+      | Ptr (Fun (l, r)) -> l, r
+      | _ -> failwith "nonfunction passed to cmp_call" in
+    let args_l, args_code, _ =
+      List.fold_left (fun (args_list, code_l, i) arg ->
+        let ty, op, code = cmp_exp c arg in
+        let typ_or = List.nth ty_l i in
+        if typ_or = ty then
+          (args_list @ [(ty, op)], code_l >@ code, i+1)
+        else
+          (* Gotta cast*)
+          let cast_id = gensym "cast" in
+          let cast_ins = I (cast_id, Ll.Bitcast (ty, op, typ_or)) in
+          (args_list @ [(typ_or, Ll.Id cast_id)], code_l >@ code >:: cast_ins, i+1)
+      ) ([], [], 0) args in                        
+    let ans_id = gensym "ret" in
+    rt , Ll.Id ans_id, args_code >:: (I (ans_id, Call (rt, op, args_l)))
+    
+  | x -> failwith @@ Astlib.ml_string_of_exp_aux x
         
 
   
@@ -428,13 +459,16 @@ and cmp_lhs (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
     match exp.elt with
     | Id id -> 
       let ty, op = Ctxt.lookup id c in
-      (ty, op, [])
-    | Index (exp1, exp2) ->
-      failwith "cmp_lhs Index: not implemented"
+      ty, op, []
+    | Index(arr, i) ->
+      let arr_ty, arr_op, arr_code = cmp_exp c arr in
+      let i_ty, i_op, i_code = cmp_exp c i in
+      let elem_ptr = gensym "elem_ptr" in
+      let gep_ins = I (elem_ptr, Gep(arr_ty, arr_op, [Ll.Const 0L ; Ll.Const 1L ; i_op])) in
+      i_ty, Ll.Id elem_ptr, arr_code >@ [gep_ins]
     | _ -> failwith "not possible"
 let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
   match stmt.elt with
-
 
     | Ret exp_opt -> begin match exp_opt with
                      | None -> c, [T (Ll.Ret (Void, None))]
@@ -449,9 +483,9 @@ let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
                         let new_c = Ctxt.add c id (Ptr ty, Ll.Id s_id) in
                         new_c, (code >:: ( E (s_id,(Ll.Alloca ty))) >:: (I ("", Ll.Store (ty, op, Ll.Id s_id))))
     | Assn (lhs, exp) -> 
-                        let ty, o1, code1 = cmp_lhs c lhs in
-                        let ty, o2, code1 = cmp_exp c exp in
-                        c, (code1 >:: (I ("", Ll.Store (ty, o2, o1))))
+                        let _, o1, code1 = cmp_lhs c lhs in
+                        let ty, o2, code2 = cmp_exp c exp in
+                        c, (code1 >@ code2 >:: (I ("", Ll.Store (ty, o2, o1))))
     | While (exp, block) ->
                         let ty, o1, code1 = cmp_exp c exp in
                         let test_id = (gensym "test") in
@@ -499,19 +533,25 @@ let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
                         )
     | SCall (exp, args) ->
                         let ty, op, code = cmp_exp c exp in
-                        let (ty_l, rt) =
+                        let ty_l, rt =
                           match ty with
                           | Ptr (Fun (l, r)) -> l, r
                           | _ -> failwith "nonfunction passed to cmp_call" in
-                        let args_l, args_code =
-                          List.fold_left (fun (args_list, code_l) arg ->
+                        let args_l, args_code, _ =
+                          List.fold_left (fun (args_list, code_l, i) arg ->
                             let ty, op, code = cmp_exp c arg in
-                            (args_list @ [(ty, op)], code_l >@ code)
-                          ) ([], []) args in                        
+                            let typ_or = List.nth ty_l i in
+                            if typ_or = ty then
+                              (args_list @ [(ty, op)], code_l >@ code, i+1)
+                            else
+                              (* Gotta cast*)
+                              let cast_id = gensym "cast" in
+                              let cast_ins = I (cast_id, Ll.Bitcast (ty, op, typ_or)) in
+                              (args_list @ [(typ_or, Ll.Id cast_id)], code_l >@ code >:: cast_ins, i+1)
+                          ) ([], [], 0) args in                        
                         let ans_id = gensym "ret" in
                         c, args_code >:: (I (ans_id, Call (rt, op, args_l)))
-    | _ -> failwith "cmp_stmt unimplemented"
-  
+
 
 (* Compile a series of statements *)
 and cmp_block (c:Ctxt.t) (rt:Ll.ty) (stmts:Ast.block) : Ctxt.t * stream =
@@ -542,10 +582,19 @@ let cmp_function_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
    in well-formed programs. (The constructors starting with C). 
 *)
 let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
+
+  let typ_of_global_expr = function
+    | CNull r -> cmp_ty (TRef r)
+    | CBool b -> I1
+    | CInt i  -> I64
+    | CStr s  -> Ptr (Array (String.length s + 1, I8))
+    | CArr (ty, elems) -> Ptr (Struct [I64; Array(List.length elems, cmp_ty ty)])
+    | _ -> failwith "bad global initializer: "
+  in
+
   List.fold_left (fun c -> function
     | Gvdecl { elt={name ; init } }->
-      let ast_ty = typ_of_global_expr init.elt in
-      let ty = cmp_ty ast_ty in
+      let ty = typ_of_global_expr init.elt in
       Ctxt.add c name (Ptr ty, Gid name)
     | _ -> c
   ) c p
@@ -606,19 +655,26 @@ let rec cmp_gexp c (e:Ast.exp node) : Ll.gdecl * (Ll.gid * Ll.gdecl) list =
   | CNull rty -> (cmp_ty (TRef rty), Ll.GNull),[]
   | CBool b -> (I1, if b then GInt 1L else GInt 0L), []
   | CInt i -> (I64, GInt i), []
+  | CStr s ->
+    let str_name = gensym "str" in
+    let len = String.length s in
+    (* I8 are Characters*)
+    let str_ty = Array (len + 1, I8) in
+    let g_str = GString s in
+    let str_struc = (str_name, (str_ty, g_str)) in
+    (Ptr str_ty, GGid str_name), [str_struc]
+
   | CArr (ty, elems) -> 
     let len = List.length elems in
     let elem_ty = cmp_ty ty in
     let arr_ty = Struct[I64; Array(len, elem_ty)] in
-    let t = Ptr (Struct[I64; Array(0, elem_ty)]) in
     let temp = (List.map (cmp_gexp c) elems) in
     let arr_l_elem = List.map (fun (i,j) -> i) temp  in 
     let garr = GArray arr_l_elem in
     let arr_name = (gensym "global_arr") in
     let gstruct = GStruct [ (I64, GInt (Int64.of_int len)) ; (  Array(len, elem_ty), garr)] in
     let arr_struc = (arr_name, ( arr_ty ,gstruct )) in
-    let x = GBitcast (Ptr arr_ty, GGid arr_name , t) in
-    (t, x), [arr_struc]
+    (Ptr arr_ty, GGid arr_name ), [arr_struc]
 
   | _ -> failwith "unimplemented"
   end
