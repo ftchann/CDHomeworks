@@ -337,12 +337,12 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
   | CBool true    -> (I1, Ll.Const 1L, [])
   | CBool false   -> (I1, Ll.Const 0L, [])
   | Bop (op, exp1, exp2) -> 
-    let _, o1, s1 = cmp_exp c exp1 in
+    let t, o1, s1 = cmp_exp c exp1 in
     let _, o2, s2 = cmp_exp c exp2 in
     let _, _, ret_ty = typ_of_binop op in 
     let ll_ty = cmp_ty ret_ty in
     let ans_id = gensym "ans" in
-    let ll_ins = cmp_binop op ll_ty o1 o2 in
+    let ll_ins = cmp_binop op t o1 o2 in
     (ll_ty, Ll.Id ans_id, s1 >@ s2 >:: I (ans_id, ll_ins))
   | Uop (op, exp) ->
     let ty, o, s = cmp_exp c exp in
@@ -353,10 +353,20 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
       | Ast.Bitnot -> Binop(Ll.Xor, ty, Ll.Const Int64.minus_one, o)
     in
     let ans_id = gensym "ans" in
-    (ty, o, s >:: I (ans_id, ll_ins))
+    (ty, Ll.Id ans_id, s >:: I (ans_id, ll_ins))
 
+
+  | Id id ->
+    let ty, op = Ctxt.lookup id c in
+    begin match ty with
+      | Ptr (Fun _) -> ty, op, []
+      | Ptr t ->
+        let ans_id = gensym "ans" in
+        (t, Ll.Id ans_id, [ I (ans_id, Load(ty, op)) ])
+      | _ -> failwith "not a pointer"  
+    end
   | _ -> failwith "cmp_exp: not implemented"
-  
+        
 
   
 (* Compile a statement in context c with return typ rt. Return a new context, 
@@ -385,25 +395,94 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
      pointer, you just need to store to it!
 
  *)
-
+and cmp_lhs (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
+    match exp.elt with
+    | Id id -> 
+      let ty, op = Ctxt.lookup id c in
+      (ty, op, [])
+    | Index (exp1, exp2) ->
+      failwith "cmp_lhs Index: not implemented"
+    | _ -> failwith "not possible"
 let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
-  let el_l = match stmt.elt with
+  match stmt.elt with
 
 
     | Ret exp_opt -> begin match exp_opt with
-                     | None -> [T (Ll.Ret (Void, None))]
+                     | None -> c, [T (Ll.Ret (Void, None))]
                      | Some exp -> 
                         let ty, op, code = cmp_exp c exp in
-                        (code >:: T (Ll.Ret (ty, Some op)))
+                        c, (code >:: T (Ll.Ret (ty, Some op)))
                 
                       end
     | Decl (id, exp) -> 
                         let s_id = gensym id in
                         let ty, op, code = cmp_exp c exp in
-                        (code >:: ( E (s_id,(Ll.Alloca ty))) >:: (I ("", Ll.Store (ty, op, Ll.Id s_id))))
+                        let new_c = Ctxt.add c id (Ptr ty, Ll.Id s_id) in
+                        new_c, (code >:: ( E (s_id,(Ll.Alloca ty))) >:: (I ("", Ll.Store (ty, op, Ll.Id s_id))))
+    | Assn (lhs, exp) -> 
+                        let ty, o1, code1 = cmp_lhs c lhs in
+                        let ty, o2, code1 = cmp_exp c exp in
+                        c, (code1 >:: (I ("", Ll.Store (ty, o2, o1))))
+    | While (exp, block) ->
+                        let ty, o1, code1 = cmp_exp c exp in
+                        let test_id = (gensym "test") in
+                        let test_ins = Ll.Icmp (Ll.Eq, ty, o1, Ll.Const 0L) in
+                        let lpre, lbody, lpost = gensym "pre", gensym "body", gensym "post" in
+                        let new_c, code2 = cmp_block c rt block in
+                        new_c, ( [] >:: T (Br lpre) >:: (L lpre) 
+                        >@ code1 >:: I (test_id, test_ins) 
+                        >:: (T (Ll.Cbr (Ll.Id test_id, lpost, lbody)))
+                        >:: (L  lbody)
+                        >@ code2
+                        >:: (T (Ll.Br lpre))
+                        >:: (L  lpost)
+                        )
+    | For (init, cond_op, after_op, body) -> 
+      
+                        let after = match after_op with
+                          | None -> []
+                          | Some x -> [x] in
+                        let cond = match cond_op with
+                          | None -> no_loc @@ CBool true
+                          | Some x -> x in
+                        
+                        let body_new = body @ after in
+                        let init_block = List.map (fun x -> no_loc @@ Decl x) init in
+                        let c_new, code1 = cmp_block c rt init_block in
+                        let c_new2, code2 = cmp_stmt c_new rt (no_loc @@ While (cond, body_new)) in
+                        c_new2, code1 >@ code2
+    | If (cond, thenb, elseb) -> 
+                        let ty, o1, code1 = cmp_exp c cond in
+                        let lthen, lelse = gensym "then", gensym "else" in
+                        let lmerge = gensym "merge" in
+                        let test_id = (gensym "test") in
+                        let test_ins = Ll.Icmp (Ll.Eq, ty, o1, Ll.Const 0L) in
+                        let new_c, code2 = cmp_block c rt thenb in
+                        let new_c2, code3 = cmp_block new_c rt elseb in
+                        new_c2, (code1 >:: (I (test_id, test_ins)) >:: (T (Ll.Cbr (Ll.Id test_id, lelse, lthen)))
+                        >:: (L lthen)
+                        >@ code2
+                        >:: (T (Ll.Br lmerge))
+                        >:: (L lelse)
+                        >@ code3
+                        >:: (T (Ll.Br lmerge))
+                        )
+    | SCall (exp, args) ->
+                        let ty, op, code = cmp_exp c exp in
+                        let (ty_l, rt) =
+                          match ty with
+                          | Ptr (Fun (l, r)) -> l, r
+                          | _ -> failwith "nonfunction passed to cmp_call" in
+                        let args_l, args_code =
+                          List.fold_left (fun (args_list, code_l) arg ->
+                            let ty, op, code = cmp_exp c arg in
+                            (args_list @ [(ty, op)], code_l >@ code)
+                          ) ([], []) args in                        
+                        let ans_id = gensym "ret" in
+                        c, args_code >:: (I (ans_id, Call (rt, op, args_l)))
+
     | _ -> failwith "cmp_stmt unimplemented"
-  in
-  (c, el_l)
+  
 
 (* Compile a series of statements *)
 and cmp_block (c:Ctxt.t) (rt:Ll.ty) (stmts:Ast.block) : Ctxt.t * stream =
@@ -461,7 +540,7 @@ let fdecl_helper (a: Ctxt.t * Ll.uid list * Ll.ty list * stream) (b:(ty *  id)) 
 
   let allc = gensym "allc" in
   let allc_op = Ll.Id allc in
-  let new_code = code >@ [I (allc, Ll.Alloca ll_ty)] >@ [I ("", Ll.Store (ll_ty, Ll.Id id, allc_op))] in
+  let new_code = code >@ [E (allc, Ll.Alloca ll_ty)] >@ [E ("", Ll.Store (ll_ty, Ll.Id id, allc_op))] in
   let new_c = Ctxt.add c id (Ll.Ptr ll_ty, allc_op) in
   (new_c, uid_l @ [id] , typ_p @ [ll_ty], new_code)
     

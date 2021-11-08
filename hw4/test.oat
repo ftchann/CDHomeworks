@@ -1,0 +1,8 @@
+int program (int argc, string[] argv) {
+  var x = 10;
+  var y = 5;
+
+  print_int(-x-y);
+  return 0;
+
+}
