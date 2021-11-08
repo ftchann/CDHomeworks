@@ -1,8 +1,4 @@
-int f(int a) {
+int f(int x) {
+  x = 5;
   return 5;
-}
-
-int program (int argc, string[] argv) {
-  var x = f(5);
-  return x;
 }

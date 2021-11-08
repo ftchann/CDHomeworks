@@ -617,10 +617,10 @@ let fdecl_helper (a: Ctxt.t * Ll.uid list * Ll.ty list * stream) (b:(ty *  id)) 
   let ll_ty = cmp_ty ty in
 
   let new_uid = gensym id in
-  let allc = gensym "allc" in
-  let allc_op = Ll.Id allc in
-  let new_code = code >@ [E (allc, Ll.Alloca ll_ty)] >@ [I ("", Ll.Store (ll_ty, Ll.Id new_uid, allc_op))] in
-  let new_c = Ctxt.add c new_uid (Ll.Ptr ll_ty, allc_op) in
+  let allc_uid = gensym "allc" in
+  let allc_op = Ll.Id allc_uid in
+  let new_code = code >@ [E (allc_uid, Ll.Alloca ll_ty)] >@ [I ("", Ll.Store (ll_ty, Ll.Id new_uid, allc_op))] in
+  let new_c = Ctxt.add c id (Ll.Ptr ll_ty, allc_op) in
 
   (new_c, uid_l @ [new_uid] , typ_p @ [ll_ty], new_code)
     
