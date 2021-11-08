@@ -1,4 +1,9 @@
-int f(int x) {
-  x = 5;
+
+
+int program (int argc, string[] argv) {
+  var x = new int[3];
+  var i = 0;
+  x[0] = i;
+
   return 5;
 }

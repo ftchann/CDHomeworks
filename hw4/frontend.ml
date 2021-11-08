@@ -465,7 +465,7 @@ and cmp_lhs (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
       let i_ty, i_op, i_code = cmp_exp c i in
       let elem_ptr = gensym "elem_ptr" in
       let gep_ins = I (elem_ptr, Gep(arr_ty, arr_op, [Ll.Const 0L ; Ll.Const 1L ; i_op])) in
-      i_ty, Ll.Id elem_ptr, arr_code >@ [gep_ins]
+      i_ty, Ll.Id elem_ptr, arr_code >@ i_code >@ [gep_ins]
     | _ -> failwith "not possible"
 let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
   match stmt.elt with
