@@ -365,6 +365,37 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
         (t, Ll.Id ans_id, [ I (ans_id, Load(ty, op)) ])
       | _ -> failwith "not a pointer"  
     end
+
+  | CArr (ty, elems) ->
+    let len = Ll.Const ( Int64.of_int @@ List.length elems )in
+    (* let arr_ty_constr = Ll.Struct  *)
+    let ty, op, code1 = oat_alloc_array ty len in 
+    let _, code2 = List.fold_left (fun (i, code_l) elem ->
+      let elem_ty, elem_op, code = cmp_exp c elem in
+      let elem_ptr = gensym "ind" in
+      let _ = match ty with
+        |  Ptr t -> ()
+        | _ -> failwith "not a pointer"
+      in
+      let gep_ins = I (elem_ptr, Gep(ty, op, [Ll.Const 0L ; Ll.Const 1L ; Ll.Const i])) in
+      (* Idk if needed: update length field*)
+      let s_ins = I ("", Store(elem_ty, elem_op, Ll.Id elem_ptr )) in
+      Int64.succ i, code_l >@ code >:: gep_ins >:: s_ins
+    ) (0L, []) elems in
+    (ty, op, code1 >@ code2)
+  | Index(arr, i) ->
+    let arr_ty, arr_op, arr_code = cmp_exp c arr in
+    let i_ty, i_op, i_code = cmp_exp c i in
+    let elem_ptr = gensym "elem_ptr" in
+    let ans_id = gensym "ans" in
+    let gep_ins = I (elem_ptr, Gep(arr_ty, arr_op, [Ll.Const 0L ; Ll.Const 1L ; i_op])) in
+    let ans_ty = match arr_ty with
+    | Ptr (Struct [_; Array (_,t)]) -> t 
+    | _ -> failwith "not an array" in
+    let l_ins = I (ans_id, Load (Ptr ans_ty, Ll.Id elem_ptr)) in
+    (ans_ty, Ll.Id ans_id, arr_code >@ i_code >:: gep_ins  >:: l_ins)
+
+    
   | _ -> failwith "cmp_exp: not implemented"
         
 
@@ -466,6 +497,7 @@ let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
                         >:: (L lelse)
                         >@ code3
                         >:: (T (Ll.Br lmerge))
+                        >:: (L lmerge)
                         )
     | SCall (exp, args) ->
                         let ty, op, code = cmp_exp c exp in
@@ -480,7 +512,6 @@ let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
                           ) ([], []) args in                        
                         let ans_id = gensym "ret" in
                         c, args_code >:: (I (ans_id, Call (rt, op, args_l)))
-
     | _ -> failwith "cmp_stmt unimplemented"
   
 
@@ -538,11 +569,13 @@ let fdecl_helper (a: Ctxt.t * Ll.uid list * Ll.ty list * stream) (b:(ty *  id)) 
   let ty, id = b in
   let ll_ty = cmp_ty ty in
 
+  let new_uid = gensym id in
   let allc = gensym "allc" in
   let allc_op = Ll.Id allc in
-  let new_code = code >@ [E (allc, Ll.Alloca ll_ty)] >@ [E ("", Ll.Store (ll_ty, Ll.Id id, allc_op))] in
-  let new_c = Ctxt.add c id (Ll.Ptr ll_ty, allc_op) in
-  (new_c, uid_l @ [id] , typ_p @ [ll_ty], new_code)
+  let new_code = code >@ [E (allc, Ll.Alloca ll_ty)] >@ [I ("", Ll.Store (ll_ty, Ll.Id new_uid, allc_op))] in
+  let new_c = Ctxt.add c new_uid (Ll.Ptr ll_ty, allc_op) in
+
+  (new_c, uid_l @ [new_uid] , typ_p @ [ll_ty], new_code)
     
 
 

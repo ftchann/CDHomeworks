@@ -1,8 +1,8 @@
 int program (int argc, string[] argv) {
-  var x = 10;
-  var y = 5;
-
-  print_int(-x-y);
-  return 0;
-
+      var x = new int[][]{new int[]{1},
+                      new int[]{2},
+                      new int[]{3},
+                      new int[]{4}};
+    return 0;
 }
+
