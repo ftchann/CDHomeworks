@@ -55,7 +55,7 @@ int program (int argc, string[] argv) {
         for (var i=0; i < 100; i=i+1;) { test_array[i] = 2 * i + 1; }
 	var even = binary_search (test_array, 80, 0, 99);
 	var odd = binary_search (test_array, 81, 0, 99);
-
+	
 	if (!(even & odd) & (even | odd))
 	{
 		print_string("Correct!");

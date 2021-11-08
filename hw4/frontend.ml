@@ -341,7 +341,7 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
   | Uop (op, exp) ->
     let ty, o, s = cmp_exp c exp in
     let ll_ins = match op with
-      | Ast.Lognot -> Binop(Ll.Xor, ty, o, o)
+      | Ast.Lognot -> Binop(Ll.Xor, ty, o, Ll.Const 1L)
       | Ast.Neg    -> Binop(Ll.Sub, ty, Ll.Const 0L, o)
       (* Minus one is OxFFFFFF*)
       | Ast.Bitnot -> Binop(Ll.Xor, ty, Ll.Const Int64.minus_one, o)
