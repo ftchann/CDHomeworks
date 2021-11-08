@@ -29,12 +29,17 @@
   ("null", NULL);
   ("void", TVOID);
   ("int", TINT);
+  ("bool", TBOOL);
   ("string", TSTRING);
+  ("true", TRUE);
+  ("false", FALSE);
   ("else", ELSE);
   ("if", IF);
   ("while", WHILE);
+  ("for", FOR);
   ("return", RETURN);
   ("var", VAR);
+  ("new", NEW);
   ("global", GLOBAL);
 
   (* Symbols *)
@@ -47,6 +52,19 @@
   ( "*", STAR);
   ( "=", EQ);
   ( "==", EQEQ);
+  ( "!=", BANGEQ);
+  ( ">", GT);
+  ( "<", LT);
+  ( ">=", GTEQ);
+  ( "<=", LTEQ);
+  ( "<<", LTLT);
+  ( ">>", GTGT);
+  ( ">>>", GTGTGT);
+  ( "&", AMP);
+  ( "|", BAR);
+  ( "[&]", LAMPR);
+  ( "[|]", LBARR);
+  ( "[]", LR);
   ( "!", BANG);
   ( "~", TILDE);
   ( "(", LPAREN);
@@ -127,7 +145,10 @@ rule token = parse
   | newline { newline lexbuf; token lexbuf }
 
   | ';' | ',' | '{' | '}' | '+' | '-' | '*' | '=' | "==" 
-  | "!=" | '!' | '~' | '(' | ')' | '[' | ']' 
+  | "!=" | '!' | '~' | '(' | ')' | '[' | ']' | '>'
+  | ">=" | "<="
+  | ">>" | ">>>" | '<' | "<<" | '&' | '|'
+  | "[&]" | "[|]" | "[]"
     { create_token lexbuf }
 
   | _ as c { unexpected_char lexbuf c }
