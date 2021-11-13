@@ -1,9 +1,10 @@
-int program (int argc, string[] argv) {
- 
-  if (true) {
-    return 0;
-  } else {
-    return 1;
-  }
+global str = "hello world"; 
 
+int program (int argc, string[] argv) {
+  var arr = array_of_string (str);
+  for (var i=0; i<9; i=i+1;) {
+    print_int(arr[i]);
+  }
+  return 0; 
 }
+
