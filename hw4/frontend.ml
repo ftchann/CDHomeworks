@@ -669,7 +669,6 @@ let cmp_fdecl (c:Ctxt.t) (f:Ast.fdecl node) : Ll.fdecl * (Ll.gid * Ll.gdecl) lis
     (c,[], [],  []) args in
 
   let ll_retty = cmp_ret_ty frtyp in
-
   let final_ins = if (ll_retty = Void) then [] else
     let ret_uid = gensym "ret_hate" in 
     let ret_stupid_alloca = E (ret_uid, Alloca ll_retty) in
@@ -679,7 +678,7 @@ let cmp_fdecl (c:Ctxt.t) (f:Ast.fdecl node) : Ll.fdecl * (Ll.gid * Ll.gdecl) lis
     [ret_stupid_alloca]>:: ret_load>:: final_return
   in
   let newc, block = cmp_block new_c ll_retty body in
-  let stream = (ins_l >@ block) in
+  let stream = (ins_l >@ block >@ final_ins) in
   let cfg, glist = cfg_of_stream stream in
   let fdcl : Ll.fdecl = {f_cfg = cfg; f_param = uid_l; f_ty = (ty_l, ll_retty)} in
   fdcl, glist
