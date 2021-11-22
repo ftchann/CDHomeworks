@@ -130,7 +130,35 @@ and subtype_ref (c : Tctxt.t) (t1 : Ast.rty) (t2 : Ast.rty) : bool =
     - tc contains the structure definition context
  *)
 let rec typecheck_ty (l : 'a Ast.node) (tc : Tctxt.t) (t : Ast.ty) : unit =
-  failwith "todo: implement typecheck_ty"
+  match t with
+    | TInt -> ()
+    | TBool -> ()
+    | TRef x -> typeref l tc x
+    | TNullRef x -> typeref l tc x 
+
+and typeref (l : 'a Ast.node) (tc : Tctxt.t) (t : Ast.rty) : unit =
+  match t with 
+    | RString -> ()
+    | RArray t -> typecheck_ty l tc t
+    | RStruct x -> (
+      let s = Tctxt.lookup_struct_option x tc in
+      match s with 
+      | Some y -> () 
+      | None -> type_error l @@ "TypeError in typeref for " ^ x 
+    )
+    | RFun (tl, rt) -> (
+      List.iter (fun x -> typecheck_ty l tc x) tl;
+      typeret l tc rt;
+    )
+
+and typeret (l : 'a Ast.node) (tc:Tctxt.t) (t: ret_ty) : unit =
+  match t with
+    | RetVoid -> ()
+    | RetVal x -> typecheck_ty l tc x
+
+
+
+
 
 (* typechecking expressions ------------------------------------------------- *)
 (* Typechecks an expression in the typing context c, returns the type of the
@@ -158,7 +186,22 @@ let rec typecheck_ty (l : 'a Ast.node) (tc : Tctxt.t) (t : Ast.ty) : unit =
 
 *)
 let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
-  failwith "todo: implement typecheck_exp"
+  begin match e.elt with
+    | CNull x -> TNullRef x
+    | CBool x -> TBool
+    | CInt x -> TInt
+    | CStr x -> TRef RString
+    | Id x -> failwith "id exp"
+    | CArr (x, y) -> failwith "carr exp"
+    | NewArr (x, y, z, f) -> failwith "newarr exp"
+    | Index (x, y) -> failwith "index exp"
+    | Length x -> failwith "length exp"
+    | CStruct (x, y) -> failwith "cstruct expr"
+    | Proj (x, y) -> failwith "proj expr"
+    | Call (x, y) -> failwith "call expr"
+    | Bop (x, y, z) -> failwith "bop expr"
+    | Uop (x, y) -> failwith "uop expr"
+  end
 
 (* statements --------------------------------------------------------------- *)
 
@@ -194,7 +237,16 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
      block typecheck rules.
 *)
 let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.t * bool =
-  failwith "todo: implement typecheck_stmt"
+  begin match s.elt with 
+    | Assn (x, y) -> failwith "assn statement" 
+    | Decl x -> failwith "decl statement"
+    | Ret x -> failwith "ret statement"
+    | SCall (x, y) -> failwith "scall statement"
+    | If (x, y, z) -> failwith "if statement"
+    | Cast (x, y, z, a, b) -> failwith "cast statement"
+    | For (x, y, z, a) -> failwith "for statement"
+    | While (x, y) -> failwith "while statement"
+  end
 
 
 (* struct type declarations ------------------------------------------------- *)
@@ -221,7 +273,41 @@ let typecheck_tdecl (tc : Tctxt.t) id fs  (l : 'a Ast.node) : unit =
     - checks that the function actually returns
 *)
 let typecheck_fdecl (tc : Tctxt.t) (f : Ast.fdecl) (l : 'a Ast.node) : unit =
-  failwith "todo: typecheck_fdecl"
+begin
+  let rec checker (c : Tctxt.local_ctxt) (vn) : bool =
+    match c with 
+    | x::y -> if (fst x <> vn) then checker y vn else true
+    | [] -> false
+  in
+
+  let helper (c:Tctxt.t) (arg : (Ast.ty * Ast.id)) : Tctxt.t =
+    if (checker tc.locals (snd arg)) then type_error l @@ "Two params have the same name: " ^ (snd arg)
+    else Tctxt.add_local c (snd arg) (fst arg) 
+  in
+
+  (* extending the context with local variables *)
+  let new_c = List.fold_left helper tc f.args in
+
+  let bodyhelper ((c, flag) : Tctxt.t * bool) (s : stmt node) : Tctxt.t * bool = 
+    if (flag) then type_error s @@ "We already had an return in " ^ f.fname
+    else typecheck_stmt c s f.frtyp
+  in
+
+  (* THIS ISNT FINAL *)
+  (*  
+      we shouldnt iterate over statements like that I think
+      But I dont know how to deal with it... Do we always only return at the end? 
+      Are we allowed to return in the middle of a block? What about returns in if's?
+      Idea atm to simply throw type error if flag is already set and we keep iterating...
+      maybe its the wrong direction or what ever..
+  *)
+  let (last_c, breturn) = List.fold_left bodyhelper (new_c, false) f.body in
+  if (not breturn) then type_error l @@ "No return statement in " ^ f.fname
+
+end
+
+
+
 
 (* creating the typchecking context ----------------------------------------- *)
 
