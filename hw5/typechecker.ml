@@ -197,7 +197,6 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
       | Some t -> t
       | None -> type_error e @@ "Didnt find Id named: " ^ x
     )
-      
     | CArr (x, y) -> failwith "carr exp"
     | NewArr (x, y, z, f) -> failwith "newarr exp"
     | Index (x, y) -> failwith "index exp"
@@ -205,8 +204,23 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
     | CStruct (x, y) -> failwith "cstruct expr"
     | Proj (x, y) -> failwith "proj expr"
     | Call (x, y) -> failwith "call expr"
-    | Bop (x, y, z) -> failwith "bop expr"
-    | Uop (x, y) -> failwith "uop expr"
+    | Bop (op, e1, e2) -> failwith "bop expr"
+    | Uop (op, expr) -> (
+      match op with 
+      | Bitnot 
+      | Neg -> (
+        let ty = typecheck_exp c expr in
+        match ty with
+        | TInt -> TInt
+        | _ -> type_error e @@ "uop shouldve been of type int"
+      )
+      | Lognot -> (
+        let ty = typecheck_exp c expr in
+        match ty with
+        | TBool -> TBool 
+        | _ -> type_error e @@ "uop with lognot shouldve been of type bool"
+      )
+    )
   end
 
 (* statements --------------------------------------------------------------- *)
@@ -269,7 +283,18 @@ let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.
       if (subtype tc e l) then (tc, false) 
       else type_error s @@ "Tried to assign wrong type"
     )
-    | Decl x -> failwith "decl statement"
+    | Decl (id, expr) -> (
+      let x = Tctxt.lookup_local_option id tc in
+      
+      let _ = match x with 
+        | Some _ -> type_error s @@ "variable is already declared: " ^ id
+        | None -> ()
+      in
+
+      let ty = typecheck_exp tc expr in
+
+      (Tctxt.add_local tc id ty, false) 
+    )
     | Ret exp -> (
       match exp, to_ret with 
         | Some e, RetVal x -> (
