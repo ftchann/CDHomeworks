@@ -251,13 +251,78 @@ let typecheck_fdecl (tc : Tctxt.t) (f : Ast.fdecl) (l : 'a Ast.node) : unit =
    constants, but can't mention other global values *)
 
 let create_struct_ctxt (p:Ast.prog) : Tctxt.t =
-  failwith "todo: create_struct_ctxt"
 
+  (* return true if duplicate struct *)
+  let rec checker (s:Tctxt.struct_ctxt) (sn : string) : bool = 
+    match s with 
+    | x::y -> if (fst x <> sn) then checker y sn else true
+    | [] -> false
+  in
+  
+  let helper (c : Tctxt.t) (d : Ast.decl)  : Tctxt.t =
+    match d with 
+    | Gtdecl x -> (
+
+      let sn, fl = x.elt in
+      
+      if (checker c.structs sn) then type_error x @@ "Duplicate struct with name: " ^ sn
+      else Tctxt.add_struct c sn fl
+    )
+    | _ -> c
+  in
+
+  List.fold_left helper Tctxt.empty p
+
+
+let rec checker (s:Tctxt.global_ctxt) (fn : string) : bool = 
+    match s with
+    | x::y -> if (fst x <> fn) then checker y fn else true
+    | [] -> false
 let create_function_ctxt (tc:Tctxt.t) (p:Ast.prog) : Tctxt.t =
-  failwith "todo: create_function_ctxt"
+
+  
+  
+  let helper (c : Tctxt.t) (d : Ast.decl)  : Tctxt.t = 
+    match d with 
+    | Gfdecl x -> (
+      let y = x.elt in
+      let fn = y.fname in
+
+      (* builds type list for later *)
+      let typs = List.map (fun x -> fst x) y.args in
+
+      let func : Ast.ty = TRef (RFun (typs, y.frtyp)) in
+
+
+      if (checker c.globals fn) then type_error x @@ "Duplicate function with name: " ^ fn 
+      else Tctxt.add_global c y.fname func
+    )
+    | _ -> c
+  in
+
+  List.fold_left helper tc p 
+
+
+
 
 let create_global_ctxt (tc:Tctxt.t) (p:Ast.prog) : Tctxt.t =
-  failwith "todo: create_function_ctxt"
+
+  let helper (c : Tctxt.t) (d : Ast.decl) : Tctxt.t = 
+    match d with 
+    | Gvdecl x -> (
+      let y = x.elt in
+      let vn = y.name in
+
+      let vtyp : Ast.ty = typecheck_exp c y.init in
+
+      if (checker c.globals vn) then type_error x @@ "Duplicate function with name: " ^ vn 
+      else Tctxt.add_global c y.name vtyp
+
+    )
+    | _ -> c
+  in
+
+  List.fold_left helper tc p
 
 
 (* This function implements the |- prog and the H ; G |- prog 
