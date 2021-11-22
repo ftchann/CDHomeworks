@@ -46,12 +46,72 @@ let typ_of_unop : Ast.unop -> Ast.ty * Ast.ty = function
       relation. We have included a template for subtype_ref to get you started.
       (Don't forget about OCaml's 'and' keyword.)
 *)
+
 let rec subtype (c : Tctxt.t) (t1 : Ast.ty) (t2 : Ast.ty) : bool =
-  failwith "todo: subtype"
+  begin match t1, t2 with 
+    | TInt, TInt -> true
+    | TBool, TBool -> true
+    | TNullRef r1, TNullRef r2 -> subtype_ref c r1 r2
+    | TRef r1, TRef r2 -> subtype_ref c r1 r2
+    | TRef r1, TNullRef r2 -> subtype_ref c r1 r2
+    | _ -> false
+  end
 
 (* Decides whether H |-r ref1 <: ref2 *)
 and subtype_ref (c : Tctxt.t) (t1 : Ast.rty) (t2 : Ast.rty) : bool =
-  failwith "todo: subtype_ref"
+  begin match t1, t2 with
+    | RString, RString -> true
+    | RArray t1, RArray t2 -> subtype c t1 t2
+    | RStruct xx, RStruct yy -> (
+      let s1 = Tctxt.lookup_struct_option xx c in
+      let s2 = Tctxt.lookup_struct_option yy c in
+      (* looked up as option since error if struct doesnt exist dunno if necessary tho
+        cuz its not really wrong typed if it doesnt exist..*)
+      match s1, s2 with
+      | Some x, Some y -> (
+        (* checks field for field if the type is the same *)
+        let rec checker (l1 : Ast.field list) (l2 : Ast.field list) : bool = 
+          begin match l1, l2 with
+            | a::b, d::e -> 
+              if (a.ftyp = d.ftyp) then checker b e
+              else false
+            | _, [] -> true
+            | [], a::b -> false
+          end 
+        in
+
+        checker x y 
+      )
+      | _ -> false
+    )
+    | RFun (t1, rt1), RFun (t2, rt2) -> (
+
+      (* checking param for param if they are subtype of eachother... *)
+      let rec checker (l1 : Ast.ty list) (l2 : Ast.ty list) : bool = 
+        begin match l1, l2 with
+        | a::b, d::e -> 
+          if (subtype c d a) then checker b e
+          else false
+        | [], [] -> true
+        | _ -> false
+        end
+      in
+
+      (*subtype of return*)
+      let subret (l1 : Ast.ret_ty) (l2 : Ast.ret_ty) : bool =
+        match l1, l2 with 
+        | RetVoid, RetVoid -> true
+        | RetVal x ,RetVal y -> subtype c x y
+        | _ -> false
+      in
+
+      checker t1 t2 && subret rt1 rt2
+    )
+    | _ -> false
+    
+  end
+
+
 
 
 (* well-formed types -------------------------------------------------------- *)
