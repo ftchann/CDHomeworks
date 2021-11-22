@@ -307,7 +307,32 @@ let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.
         | None, RetVal x -> type_error s @@ "Got void return type but expected another type"
         | None, RetVoid -> (tc, true) 
     )
-    | SCall (x, y) -> failwith "scall statement"
+    | SCall (f, args) -> (
+      let func = typecheck_exp tc f in
+
+      let typs2 = List.map (fun x -> typecheck_exp tc x) args in
+      
+      let rec checker l1 l2 : bool = 
+        match l1, l2 with
+        | x::y, z::t -> if (subtype tc x z) then checker y t else true
+        | [], [] -> false
+        | _ -> true
+      in
+
+      match func with
+        | TRef (RFun (typs, rettyp)) 
+        | TNullRef ( RFun (typs, rettyp)) 
+          when (rettyp = RetVoid) -> (
+            if (checker typs2 typs) then type_error s @@ "SCall param types dont match"
+            else (tc, false)
+        )
+        | _ -> type_error s @@ "Scall statement wasnt a function"
+      
+      
+
+
+
+    )
     | If (x, y, z) -> failwith "if statement"
     | Cast (x, y, z, a, b) -> failwith "cast statement"
     | For (x, y, z, a) -> failwith "for statement"
@@ -434,6 +459,22 @@ let rec checker (s:Tctxt.global_ctxt) (fn : string) : bool =
     | [] -> false
 let create_function_ctxt (tc:Tctxt.t) (p:Ast.prog) : Tctxt.t =
 
+  (* addint builtin function cuz I forgot them ,,,, *)
+
+  let builtinhelper (c: Tctxt.t) (d) : Tctxt.t =
+    let fn = fst d in
+    let sec  = snd d in
+    
+    let func : Ast.ty = TRef (RFun (fst sec, snd sec)) in
+
+    if (checker c.globals fn) then failwith "builtin already defined"
+    else Tctxt.add_global c fn func    
+  in
+
+
+
+  (*[ "array_of_string",  ([TRef RString],  RetVal (TRef(RArray TInt)))*)
+  
   let helper (c : Tctxt.t) (d : Ast.decl)  : Tctxt.t = 
     match d with 
     | Gfdecl x -> (
@@ -451,7 +492,8 @@ let create_function_ctxt (tc:Tctxt.t) (p:Ast.prog) : Tctxt.t =
     | _ -> c
   in
 
-  List.fold_left helper tc p 
+  let newc = List.fold_left helper tc p in
+  List.fold_left builtinhelper newc builtins
 
 
 
