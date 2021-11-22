@@ -73,7 +73,7 @@ and subtype_ref (c : Tctxt.t) (t1 : Ast.rty) (t2 : Ast.rty) : bool =
         let rec checker (l1 : Ast.field list) (l2 : Ast.field list) : bool = 
           begin match l1, l2 with
             | a::b, d::e -> 
-              if (a.ftyp = d.ftyp) then checker b e
+              if (a.ftyp = d.ftyp && a.fieldName = d.fieldName) then checker b e
               else false
             | _, [] -> true
             | [], a::b -> false
@@ -191,7 +191,13 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
     | CBool x -> TBool
     | CInt x -> TInt
     | CStr x -> TRef RString
-    | Id x -> failwith "id exp"
+    | Id x -> (
+      let id = Tctxt.lookup_option x c in
+      match id with
+      | Some t -> t
+      | None -> type_error e @@ "Didnt find Id named: " ^ x
+    )
+      
     | CArr (x, y) -> failwith "carr exp"
     | NewArr (x, y, z, f) -> failwith "newarr exp"
     | Index (x, y) -> failwith "index exp"
@@ -237,10 +243,45 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
      block typecheck rules.
 *)
 let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.t * bool =
+
   begin match s.elt with 
-    | Assn (x, y) -> failwith "assn statement" 
+    | Assn (lhs, expr) -> (
+
+      (* check if t in L or not global function id *)
+      (*let func : Ast.ty = TRef (RFun (typs, y.frtyp)) in*)
+
+      (match lhs.elt with
+      | Id t -> (
+        match Tctxt.lookup_local_option t tc with
+        | Some y -> ()
+        | None -> (
+          match Tctxt.lookup_global_option t tc with
+          | Some ( TRef (RFun (_, _))) -> type_error s @@ "lefthandside of assignment is globalfunction with name: " ^ t
+          | _ -> ()
+        )
+      )
+      | _ -> ()
+      );
+
+      let e = typecheck_exp tc expr in
+      let l = typecheck_exp tc lhs in
+
+      if (subtype tc e l) then (tc, false) 
+      else type_error s @@ "Tried to assign wrong type"
+    )
     | Decl x -> failwith "decl statement"
-    | Ret x -> failwith "ret statement"
+    | Ret exp -> (
+      match exp, to_ret with 
+        | Some e, RetVal x -> (
+          let typ : Ast.ty = typecheck_exp tc e in
+          if (subtype tc typ x) then (tc, true)
+          else type_error s @@ "Wrong return type"
+        )
+        (* Maybe e can be a void too... but I think its not possible with the rules *)
+        | Some e, RetVoid -> type_error s @@ "Expected Void as return type"
+        | None, RetVal x -> type_error s @@ "Got void return type but expected another type"
+        | None, RetVoid -> (tc, true) 
+    )
     | SCall (x, y) -> failwith "scall statement"
     | If (x, y, z) -> failwith "if statement"
     | Cast (x, y, z, a, b) -> failwith "cast statement"
@@ -300,6 +341,8 @@ begin
       Are we allowed to return in the middle of a block? What about returns in if's?
       Idea atm to simply throw type error if flag is already set and we keep iterating...
       maybe its the wrong direction or what ever..
+
+      It might even be right I think..
   *)
   let (last_c, breturn) = List.fold_left bodyhelper (new_c, false) f.body in
   if (not breturn) then type_error l @@ "No return statement in " ^ f.fname
@@ -366,8 +409,6 @@ let rec checker (s:Tctxt.global_ctxt) (fn : string) : bool =
     | [] -> false
 let create_function_ctxt (tc:Tctxt.t) (p:Ast.prog) : Tctxt.t =
 
-  
-  
   let helper (c : Tctxt.t) (d : Ast.decl)  : Tctxt.t = 
     match d with 
     | Gfdecl x -> (
@@ -378,7 +419,6 @@ let create_function_ctxt (tc:Tctxt.t) (p:Ast.prog) : Tctxt.t =
       let typs = List.map (fun x -> fst x) y.args in
 
       let func : Ast.ty = TRef (RFun (typs, y.frtyp)) in
-
 
       if (checker c.globals fn) then type_error x @@ "Duplicate function with name: " ^ fn 
       else Tctxt.add_global c y.fname func
