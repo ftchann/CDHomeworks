@@ -1,10 +1,5 @@
-int f(int x, int y) {
-  return x + y;
-}
-
-global x = f;
-global y = x;
-
-int program(int argc, string[] argv) {
-  return y(3,4);
+int program (int argc, string[] argv) {
+  var x = new int[]{0};
+  var y = length(x);
+  return 0;
 }

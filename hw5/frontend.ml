@@ -276,8 +276,13 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
        of the array struct representation.
   *)
   | Ast.Length e ->
-    failwith "todo:implement Ast.Length case"
-
+    let arr_ty, arr_op, arr_code = cmp_exp tc c e in
+    let ans_id = gensym "length" in
+    let ptr_id = gensym "ptr" in
+    let gepins = I (ptr_id, Gep(arr_ty, arr_op, [Const 0L; Const 0L;])) in
+    let loadins = I (ans_id, Load(Ptr I64, Id ptr_id)) in
+    I64, Id ans_id, arr_code >:: gepins >:: loadins
+  
   | Ast.Index (e, i) ->
     let ans_ty, ptr_op, code = cmp_exp_lhs tc c exp in
     let ans_id = gensym "index" in
@@ -313,7 +318,22 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
   | Ast.NewArr (elt_ty, e1, id, e2) ->    
     let _, size_op, size_code = cmp_exp tc c e1 in
     let arr_ty, arr_op, alloc_code = oat_alloc_array tc elt_ty size_op in
-    arr_ty, arr_op, size_code >@ alloc_code
+    let decls = id, no_loc (CInt 0L) in
+    let temparr = "temparr" in
+    let temparr_uid = gensym temparr in
+    let temparr_code = [ E(temparr_uid, Alloca arr_ty)] >@ [I("", Store (arr_ty, arr_op, Id temparr_uid))] in
+    let cond = Some (no_loc @@ Bop (Lt, no_loc (Id id), no_loc (Length (no_loc (Id temparr))))) in
+    let incr_expr = no_loc @@ Bop (Add, no_loc (Id id), no_loc (CInt 1L)) in
+    let incr = Some ( no_loc @@ Assn (no_loc (Id id), incr_expr)) in
+    
+
+    let cnew = Ctxt.add c temparr (Ptr arr_ty, Id temparr_uid) in
+    let body_lhs = no_loc @@ Index (no_loc (Id temparr), no_loc (Id id)) in
+    let body = no_loc @@ Assn (body_lhs, e2) in
+    let for_stat = no_loc @@ For ([decls], cond, incr, [body]) in
+    (* return type doesn't matter*)
+    let _, for_code = cmp_stmt tc cnew Void for_stat in
+    arr_ty, arr_op, size_code >@ alloc_code >@ temparr_code >@ for_code
 
    (* STRUCT TASK: complete this code that compiles struct expressions.
       For each field component of the struct
@@ -359,7 +379,9 @@ and cmp_exp_lhs (tc : TypeCtxt.t) (c:Ctxt.t) (e:exp node) : Ll.ty * Ll.operand *
     let ans_ty = match arr_ty with 
       | Ptr (Struct [_; Array (_,t)]) -> t 
       | _ -> failwith "Index: indexed into non pointer" in
-    let ptr_id, tmp_id = gensym "index_ptr", gensym "tmp" in
+    let ptr_id, tmp_id, cast_id  = gensym "index_ptr", gensym "tmp", gensym "cast" in
+    let cast_ins = I (cast_id, Bitcast (arr_ty, arr_op, Ptr I64)) in
+    (* let call_bound_check = I (tmp_id, Ll.Call (Void, Gid "oat_assert_array_length" ,oat_assert_array_length, [cast_ins, ind_op])) in *)
     ans_ty, (Id ptr_id),
     arr_code >@ ind_code >@ lift
       [ptr_id, Gep(arr_ty, arr_op, [i64_op_of_int 0; i64_op_of_int 1; ind_op]) ]
