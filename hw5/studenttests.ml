@@ -7,7 +7,8 @@ open Gradedtests
 (* debug your program.                                          *)
 
 let global_struct_test = [
-  ("ourprograms/changed_order_global_struct.oat", "", "254")
+  ("ourprograms/changed_order_global_struct.oat", "", "254");
+  ("ourprograms/changed_order_normal_struct.oat", "", "8")
 ]
 
 let provided_tests : suite = [

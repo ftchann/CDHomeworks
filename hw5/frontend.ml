@@ -360,6 +360,13 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
   | Ast.CStruct (id, l) -> 
     let struct_ty, struct_op, struct_code = oat_alloc_struct tc id in
   
+    (* i like to sort*)
+    let sorted_l = List.sort (fun (a,_) (b,_) -> 
+      let a_index = TypeCtxt.index_of_field id a tc in
+      let b_index = TypeCtxt.index_of_field id b tc in
+      a_index - b_index
+    ) l in
+
     let stream = List.fold_left (
       fun (list) (vn, e) ->
         (* { i64, [3 x i64] }* *)
@@ -373,7 +380,7 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
         
         vcode >@ [gepins] >@ [storeins] >@ list
 
-    ) [] l in
+    ) [] sorted_l in
 
     struct_ty, struct_op, struct_code >@ stream
 
