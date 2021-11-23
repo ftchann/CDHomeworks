@@ -690,10 +690,16 @@ let rec cmp_gexp c (tc : TypeCtxt.t) (e:Ast.exp node) : Ll.gdecl * (Ll.gid * Ll.
   (* STRUCT TASK: Complete this code that generates the global initializers for a struct value. *)  
   | CStruct (id, cs) ->
 
+    let sorted_cs = List.sort (fun (a,_) (b,_) -> 
+        let a_index = TypeCtxt.index_of_field id a tc in
+        let b_index = TypeCtxt.index_of_field id b tc in
+        a_index - b_index
+    ) cs in
+
     let elts, gs = List.fold_right
     (fun (_,e) (elts, gs) ->
       let gd, gs' = cmp_gexp c tc e in
-      gd::elts, gs' @ gs) cs ([], [])
+      gd::elts, gs' @ gs) sorted_cs ([], [])
     in
 
     let gid = gensym "global_cstruct" in
