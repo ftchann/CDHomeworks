@@ -61,7 +61,7 @@ let rec subtype (c : Tctxt.t) (t1 : Ast.ty) (t2 : Ast.ty) : bool =
 and subtype_ref (c : Tctxt.t) (t1 : Ast.rty) (t2 : Ast.rty) : bool =
   begin match t1, t2 with
     | RString, RString -> true
-    | RArray t1, RArray t2 -> subtype c t1 t2
+    | RArray t1, RArray t2 -> t1 = t2
     | RStruct xx, RStruct yy -> (
       let s1 = Tctxt.lookup_struct_option xx c in
       let s2 = Tctxt.lookup_struct_option yy c in
@@ -73,7 +73,7 @@ and subtype_ref (c : Tctxt.t) (t1 : Ast.rty) (t2 : Ast.rty) : bool =
         let rec checker (l1 : Ast.field list) (l2 : Ast.field list) : bool = 
           begin match l1, l2 with
             | a::b, d::e -> 
-              if (a.ftyp = d.ftyp && a.fieldName = d.fieldName) then checker b e
+              if (a.ftyp = d.ftyp && String.equal a.fieldName d.fieldName) then checker b e
               else false
             | _, [] -> true
             | [], a::b -> false
@@ -258,6 +258,11 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
 *)
 let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.t * bool =
 
+  let bodyhelper ((c, flag) : Tctxt.t * bool) (s : stmt node) : Tctxt.t * bool = 
+    if (flag) then type_error s @@ "We already had an return in the block"
+    else typecheck_stmt c s to_ret
+  in
+
   begin match s.elt with 
     | Assn (lhs, expr) -> (
 
@@ -327,16 +332,71 @@ let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.
             else (tc, false)
         )
         | _ -> type_error s @@ "Scall statement wasnt a function"
+    )
+    | If (expr, b1, b2) -> (
+      let e = typecheck_exp tc expr in
       
-      
+      if e <> TBool then type_error s "expr in if wasn't of type boolean"
+      else
 
+      let (_, r1) = List.fold_left bodyhelper (tc, false) b1 in
+      let (_, r2) = List.fold_left bodyhelper (tc, false) b2 in
+
+      (* we did return if both blocks return *)
+      (tc, r1 && r2)
+
+    )
+    | Cast (ref, id, exp, b1, b2) -> (
+      let e = typecheck_exp tc exp in
+
+      let refN = match e with
+        | TNullRef r-> r
+        | _ -> type_error s @@ "expr in cast wasnt of type TNullRef: " ^ id
+      in
+
+      if subtype_ref tc refN ref then (
+        (* add to local context if type isnt null *)
+        let new_c = Tctxt.add_local tc id (TRef ref) in
+        let (_, r1) = List.fold_left bodyhelper (new_c, false) b1 in
+        let (_, r2) = List.fold_left bodyhelper (tc, false) b2 in
+        (tc, r1 && r2)
+      )
+      else type_error s @@ "nullref wasnt subtype of ref: " ^ id
 
 
     )
-    | If (x, y, z) -> failwith "if statement"
-    | Cast (x, y, z, a, b) -> failwith "cast statement"
-    | For (x, y, z, a) -> failwith "for statement"
-    | While (x, y) -> failwith "while statement"
+    | For (vdecls, expopt, stmtopt, block) -> (
+      
+      (* declare new variables *)
+      let new_c = List.fold_left 
+      ( fun (c: Tctxt.t) (id, expr) -> 
+        let e = typecheck_exp c expr in
+        Tctxt.add_local c id e
+      ) tc vdecls in
+
+      let _ = match expopt with
+      | Some e -> if TBool <> typecheck_exp new_c e 
+        then type_error s @@ "expr not bool in for loop"
+      | None -> ()
+      in
+
+      let _ = match stmtopt with
+      | Some s -> typecheck_stmt new_c s to_ret
+      | None -> (tc, false)
+      in
+
+      (* does never return *)
+      let (_, _) = List.fold_left bodyhelper (new_c, false) block in
+      (tc, false)
+    )
+    | While (exp, block) -> (
+      if TBool <> typecheck_exp tc exp then type_error s @@ "wrong typed condition in while"
+      else
+      
+      (* does never return *)
+      let (_, _) = List.fold_left bodyhelper (tc, false) block in
+      (tc, false)
+    )
   end
 
 
