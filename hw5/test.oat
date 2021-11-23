@@ -1,16 +1,6 @@
-struct S { int x; int y }
-
-int sum(S? t) {
-    if?(S s = t) {
-      return s.y;
-    } else {
-      return 0;
-    }
-}
 
 int program (int argc, string[] argv) {
-    var x = 0;
-    x = x + sum(S null);
-    x = x + sum(new S{x=4; y=5});
+    var x = new int {2, 1, 3};
+
     return x;
 }

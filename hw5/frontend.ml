@@ -689,16 +689,16 @@ let rec cmp_gexp c (tc : TypeCtxt.t) (e:Ast.exp node) : Ll.gdecl * (Ll.gid * Ll.
 
   (* STRUCT TASK: Complete this code that generates the global initializers for a struct value. *)  
   | CStruct (id, cs) ->
-    failwith "gstruct" (*
-    let helper (gl, rl) ((s, e):string * Ast.exp Ast.node) = 
-      let gd, gidd_l = cmp_gexp c tc e in
-      [gd]>@gl, rl>@gidd_l
+
+    let elts, gs = List.fold_right
+    (fun (_,e) (elts, gs) ->
+      let gd, gs' = cmp_gexp c tc e in
+      gd::elts, gs' @ gs) cs ([], [])
     in
 
-    let gdecl_list, rest_list = List.fold_left helper ([], []) cs in
+    let gid = gensym "global_cstruct" in
 
-    let struct_ty : Ll.ty = GStruct l in
-    (struct_ty, GGid id), ()*)
+    (Ptr (Namedt id), GGid gid), (gid, (Namedt id, GStruct elts))::gs
 
 
   | _ -> failwith "bad global initializer"
