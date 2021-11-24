@@ -1,0 +1,18 @@
+struct Color {
+  int red;
+  int green;
+  int blue
+}
+
+int count_inc () {
+  count = count + 1;
+  return count;
+}
+
+global count = 0;
+
+
+int program (int argc, string[] argv) {
+  var garr = new Color { green = count_inc(); blue = count_inc(); red = count_inc()}; 
+  return garr.blue;
+}

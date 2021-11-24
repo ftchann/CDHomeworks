@@ -381,14 +381,14 @@ let rec cmp_exp (tc : TypeCtxt.t) (c : Ctxt.t) (exp : Ast.exp node) :
       let struct_ty, struct_op, struct_code = oat_alloc_struct tc id in
 
       (* i like to sort*)
-      let sorted_l =
+      (* let sorted_l =
         List.sort
           (fun (a, _) (b, _) ->
             let a_index = TypeCtxt.index_of_field id a tc in
             let b_index = TypeCtxt.index_of_field id b tc in
             a_index - b_index)
           l
-      in
+      in *)
 
       let stream =
         List.fold_left
@@ -405,7 +405,7 @@ let rec cmp_exp (tc : TypeCtxt.t) (c : Ctxt.t) (exp : Ast.exp node) :
             let storeins = I ("", Store (lookty, vop, Id field)) in
 
             vcode >@ [ gepins ] >@ [ storeins ] >@ list)
-          [] sorted_l
+          [] l
       in
 
       (struct_ty, struct_op, struct_code >@ stream)
