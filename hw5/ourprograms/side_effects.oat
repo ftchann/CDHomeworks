@@ -14,5 +14,8 @@ global count = 0;
 
 int program (int argc, string[] argv) {
   var garr = new Color { green = count_inc(); blue = count_inc(); red = count_inc()}; 
-  return garr.blue;
+  print_int(garr.green);
+  print_int(garr.blue);
+  print_int(garr.red);
+  return garr.red;
 }
