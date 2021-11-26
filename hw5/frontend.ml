@@ -404,7 +404,7 @@ let rec cmp_exp (tc : TypeCtxt.t) (c : Ctxt.t) (exp : Ast.exp node) :
             in
             let storeins = I ("", Store (lookty, vop, Id field)) in
 
-            vcode >@ [ gepins ] >@ [ storeins ] >@ list)
+            list >@ vcode >@ [ gepins ] >@ [ storeins ] )
           [] l
       in
 
