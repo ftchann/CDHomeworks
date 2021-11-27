@@ -176,6 +176,7 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
       | Some t -> t
       | None -> type_error e @@ "Didnt find Id named: " ^ x )
   | CArr (ty, list) ->
+      let _ = typecheck_ty e c ty in
       let all_good =
         List.fold_left
           (fun b exp ->
@@ -183,8 +184,10 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
             if subtype c cty ty then b && true else false)
           true list
       in
+
       if all_good then TRef (RArray ty) else type_error e @@ "TypeError in CArr"
   | NewArr (ty, len, id, exp2) ->
+      let _ = typecheck_ty e c ty in
       let lty = typecheck_exp c len in
       if lty = TInt then
         let k = Tctxt.lookup_local_option id c in
@@ -527,7 +530,9 @@ let typecheck_fdecl (tc : Tctxt.t) (f : Ast.fdecl) (l : 'a Ast.node) : unit =
   let helper (c : Tctxt.t) (arg : Ast.ty * Ast.id) : Tctxt.t =
     if checker c.locals (snd arg) then
       type_error l @@ "Two params have the same name: " ^ snd arg
-    else Tctxt.add_local c (snd arg) (fst arg)
+    else
+      let _ = typecheck_ty l c (fst arg) in 
+      Tctxt.add_local c (snd arg) (fst arg)
   in
 
   (* extending the context with local variables *)
@@ -535,7 +540,9 @@ let typecheck_fdecl (tc : Tctxt.t) (f : Ast.fdecl) (l : 'a Ast.node) : unit =
 
   let bodyhelper ((c, flag) : Tctxt.t * bool) (s : stmt node) : Tctxt.t * bool =
     if flag then type_error s @@ "We already had an return in " ^ f.fname
-    else typecheck_stmt c s f.frtyp
+    else 
+      let _ = typeret s c f.frtyp in
+      typecheck_stmt c s f.frtyp
   in
 
   (* THIS ISNT FINAL *)
