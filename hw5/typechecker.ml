@@ -231,9 +231,7 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
               (fun (a : Ast.cfield) (b : Ast.cfield) ->
                 let a_name, _ = a in
                 let b_name, _ = b in
-                let cmp = compare a_name b_name in
-                if cmp = 0 then type_error e @@ "Twice the same field name " ^ a_name
-                else cmp
+                compare a_name b_name
                 )
               fields
           in
@@ -244,9 +242,13 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
               List.map2
                 (fun (a : field) (b : Ast.cfield) ->
                   let aty = a.ftyp in
-                  let _, bexp = b in
+                  let a_name = a.fieldName in
+                  let b_name, bexp = b in
                   let bty = typecheck_exp c bexp in
-                  subtype c bty aty)
+                  if a_name = b_name then 
+                  subtype c bty aty
+                  else type_error e @@ "TypeError in CStruct wrong fieldname"
+                  )
                 sorted_hlist sorted_fields
             in
 
