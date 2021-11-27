@@ -5,7 +5,7 @@ struct A {
 }
 
 int program (int argc, string[] argv) {
-    var x = new A {x=1; y=2};
+    var matrix = new int[][3]{i -> new int[3]{j -> i * j}};
 
-    return x.x;
+    return 2;
 }

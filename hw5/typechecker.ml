@@ -187,6 +187,12 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
   | NewArr (ty, len, id, exp2) ->
       let lty = typecheck_exp c len in
       if lty = TInt then
+        let k = Tctxt.lookup_local_option id c in
+        let _ = 
+          match k with
+          | Some _ -> type_error e @@ "redefinition in NewArr of " ^ id
+          | None -> ()
+        in
         let cnew = Tctxt.add_local c id TInt in
         let cty = typecheck_exp cnew exp2 in
         if subtype c cty ty then TRef (RArray ty)
