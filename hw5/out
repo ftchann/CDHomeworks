@@ -1,0 +1,858 @@
+file: oatprograms/arrayargs.oat \n
+Fatal error: exception Failure("Parse error at: :[10.20-10.21]")
+file: oatprograms/arrayargs1.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 17
+file: oatprograms/arrayargs2.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 17
+file: oatprograms/arrayargs3.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 34
+file: oatprograms/arrayargs4.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/binary_gcd.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 3
+file: oatprograms/binary_search.oat \n
+Correct!--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/bsort.oat \n
+y}xotnuw notuwxy}--------------------------------------------------------------- Executing: a.out
+* a.out returned 255
+file: oatprograms/bubble_sort.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: oatprograms/calculator.oat \n
+Fatal error: exception Failure("Parse error at: :[2.20-2.21]")
+file: oatprograms/conquest.oat \n
+My name is Jeff...
+Charizard is the BEST Pokemon ever!!!--------------------------------------------------------------- Executing: a.out
+* a.out returned 11
+file: oatprograms/count_sort.oat \n
+AFHZAAEYC
+AAACEFHYZ--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/determinant_size2.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 94
+file: oatprograms/easy_p1.oat \n
+/tmp/runtime-fb1d9e.o: In function `main':
+runtime.c:(.text+0x37d): undefined reference to `program'
+clang-9: error: linker command failed with exit code 1 (use -v to see invocation)
+Fatal error: exception Platform.PlatformError("clang -Wno-override-module -O1 -Wall  -o a.out output/easy_p1.o runtime.c   ", "Exited with status 1.")
+file: oatprograms/easy_p2.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 2] variable is already declared: x")
+file: oatprograms/easy_p3.oat \n
+Fatal error: exception Typechecker.TypeError("[4, 2] variable is already declared: y")
+file: oatprograms/easy_p4.oat \n
+Fatal error: exception Typechecker.TypeError("[37, 7] uop with lognot shouldve been of type bool")
+file: oatprograms/easy_p5.oat \n
+Fatal error: exception Failure("Parse error at: :[5.19-5.20]")
+file: oatprograms/easy_p6.oat \n
+Fatal error: exception Typechecker.TypeError("[5, 2] variable is already declared: x")
+file: oatprograms/easy_p7.oat \n
+Fatal error: exception Failure("Parse error at: :[1.16-1.17]")
+file: oatprograms/easyrun1.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 17
+file: oatprograms/easyrun10.oat \n
+Fatal error: exception Typechecker.TypeError("[18, 2] We already had an return in program")
+file: oatprograms/easyrun2.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 35
+file: oatprograms/easyrun3.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 73
+file: oatprograms/easyrun4.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 6
+file: oatprograms/easyrun5.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 212
+file: oatprograms/easyrun6.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 9
+file: oatprograms/easyrun7.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 23
+file: oatprograms/easyrun8.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 160
+file: oatprograms/easyrun9.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 236
+file: oatprograms/fac.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 120
+file: oatprograms/fact.oat \n
+120--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/fibo.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/float_multiply.oat \n
+Fatal error: exception Failure("Parse error at: :[13.22-13.23]")
+file: oatprograms/gcd.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 16
+file: oatprograms/globals1.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 42
+file: oatprograms/globals2.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 17
+file: oatprograms/globals3.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 17
+file: oatprograms/globals4.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 5
+file: oatprograms/globals5.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 17
+file: oatprograms/globals6.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 15
+file: oatprograms/gnomesort.oat \n
+0125306599200--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/hashcode.oat \n
+Fatal error: exception Failure("Parse error at: :[13.8-13.14]")
+file: oatprograms/heap.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: oatprograms/insertion_sort.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 42
+file: oatprograms/is_prime.oat \n
+Fatal error: exception Failure("Parse error at: :[1.20-1.21]")
+file: oatprograms/josh_joyce_test.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/kmp.oat \n
+Fatal error: exception Failure("Parse error at: :[5.6-5.12]")
+file: oatprograms/lcs.oat \n
+OAT--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/leastsquare.oat \n
+Out of bounds index 1 for array length 1--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: oatprograms/lfsr.oat \n
+TFTF FFTT--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/lfsr2.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/lib10.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 9] Didnt find Id named: length_of_array")
+file: oatprograms/lib11.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 45
+file: oatprograms/lib12.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 12] Didnt find Id named: oat_alloc_array")
+file: oatprograms/lib13.oat \n
+Fatal error: exception Failure("Parse error at: :[8.31-8.32]")
+file: oatprograms/lib14.oat \n
+~}|{zyxwvu--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/lib15.oat \n
+Out of bounds index 1 for array length 1--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: oatprograms/lib2.oat \n
+Fatal error: exception Typechecker.TypeError("[3, 12] Didnt find Id named: length_of_array")
+file: oatprograms/lib3.oat \n
+Fatal error: exception Typechecker.TypeError("[3, 12] Didnt find Id named: length_of_array")
+file: oatprograms/lib4.oat \n
+532--------------------------------------------------------------- Executing: a.out
+* a.out returned 20
+file: oatprograms/lib5.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 20
+file: oatprograms/lib6.oat \n
+565--------------------------------------------------------------- Executing: a.out
+* a.out returned 53
+file: oatprograms/lib7.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 53
+file: oatprograms/lib8.oat \n
+Hello world!--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/lib9.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: oatprograms/life.oat \n
+Fatal error: exception Failure("Parse error at: :[47.32-47.33]")
+file: oatprograms/matrixmult.oat \n
+19 16 13 23 	5 6 7 6 	19 16 13 23 	5 6 7 6 	--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/maxsubsequence.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 107
+file: oatprograms/msort.oat \n
+~}|{zyxwvu uvwxyz{|}~ --------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/msort2.oat \n
+~}|{zyxwvu uvwxyz{|}~ --------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/no_of_fac.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 27
+file: oatprograms/path1.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 17
+file: oatprograms/path2.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 35
+file: oatprograms/path3.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 3
+file: oatprograms/phase2_1.oat \n
+Fatal error: exception Failure("Parse error at: :[1.6-1.7]")
+file: oatprograms/qs_bs.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 57
+file: oatprograms/qsort.oat \n
+kpyf{shomfhkmopsy{--------------------------------------------------------------- Executing: a.out
+* a.out returned 255
+file: oatprograms/regalloctest.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/regalloctest2.oat \n
+13799998620000000--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/regex.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: oatprograms/reverse.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 123
+file: oatprograms/rod_cutting.oat \n
+Fatal error: exception Failure("Parse error at: :[9.30-9.36]")
+file: oatprograms/run1.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 153
+file: oatprograms/run10.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 5
+file: oatprograms/run11.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 7
+file: oatprograms/run13.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: oatprograms/run14.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 16
+file: oatprograms/run15.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 19
+file: oatprograms/run16.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 13
+file: oatprograms/run17.oat \n
+Fatal error: exception Failure("Parse error at: :[3.22-3.23]")
+file: oatprograms/run18.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 231
+file: oatprograms/run19.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 231
+file: oatprograms/run2.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 6
+file: oatprograms/run20.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 19
+file: oatprograms/run21.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 99
+file: oatprograms/run22.oat \n
+abc--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/run23.oat \n
+123--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/run24.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/run25.oat \n
+nnn--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/run26.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/run27.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 99
+file: oatprograms/run28.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 18
+file: oatprograms/run29.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: oatprograms/run3.oat \n
+Fatal error: exception Typechecker.TypeError("[5, 9] TypeError in Index")
+file: oatprograms/run30.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 9
+file: oatprograms/run31.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 9
+file: oatprograms/run32.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 33
+file: oatprograms/run33.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: oatprograms/run34.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 66
+file: oatprograms/run35.oat \n
+Fatal error: exception Typechecker.TypeError("[10, 10] TypeError in Index")
+file: oatprograms/run36.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/run37.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 2
+file: oatprograms/run38.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 31
+file: oatprograms/run39.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: oatprograms/run4.oat \n
+Fatal error: exception Typechecker.TypeError("[5, 9] TypeError in Index")
+file: oatprograms/run40.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 8
+file: oatprograms/run41.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 3
+file: oatprograms/run42.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 2
+file: oatprograms/run43.oat \n
+Fatal error: exception Typechecker.TypeError("[34, 8] TypeError in Index")
+file: oatprograms/run44.oat \n
+Fatal error: exception Typechecker.TypeError("[15, 16] TypeError in Index")
+file: oatprograms/run45.oat \n
+Fatal error: exception Typechecker.TypeError("[35, 17] TypeError in Index")
+file: oatprograms/run46.oat \n
+42--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/run47.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 3
+file: oatprograms/run48.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 11
+file: oatprograms/run49.oat \n
+abc--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/run5.oat \n
+Fatal error: exception Typechecker.TypeError("[5, 9] TypeError in Index")
+file: oatprograms/run50.oat \n
+abcde--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/run51.oat \n
+3--------------------------------------------------------------- Executing: a.out
+* a.out returned 41
+file: oatprograms/run52.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 15
+file: oatprograms/run53.oat \n
+nnn--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/run54.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 10
+file: oatprograms/run55.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 6
+file: oatprograms/run56.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 7
+file: oatprograms/run6.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: oatprograms/run60.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 85
+file: oatprograms/run61.oat \n
+341--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/run7.oat \n
+Fatal error: exception Typechecker.TypeError("[5, 9] TypeError in Index")
+file: oatprograms/run8.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 2
+file: oatprograms/run9.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 4
+file: oatprograms/runtime-fail1.oat \n
+Out of bounds index 3 for array length 2--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: oatprograms/runtime-fail2.oat \n
+Out of bounds index 0 for array length 0--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: oatprograms/runtime-fail3.oat \n
+Out of bounds index -1 for array length 2--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: oatprograms/runtime-fail4.oat \n
+Out of bounds index 3 for array length 2--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: oatprograms/selectionsort.oat \n
+0125306599200--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/shortest_path_matrix.oat \n
+Fatal error: exception Failure("Parse error at: :[2.22-2.23]")
+file: oatprograms/sieve.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 25
+file: oatprograms/sqrt.oat \n
+Fatal error: exception Failure("Parse error at: :[1.17-1.18]")
+file: oatprograms/tc1.oat \n
+/tmp/runtime-5470a2.o: In function `main':
+runtime.c:(.text+0x37d): undefined reference to `program'
+clang-9: error: linker command failed with exit code 1 (use -v to see invocation)
+Fatal error: exception Platform.PlatformError("clang -Wno-override-module -O1 -Wall  -o a.out output/tc1.o runtime.c   ", "Exited with status 1.")
+file: oatprograms/tc10.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 9] uop with lognot shouldve been of type bool")
+file: oatprograms/tc11.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 9] uop with lognot shouldve been of type bool")
+file: oatprograms/tc12.oat \n
+Fatal error: exception Failure("Parse error at: :[3.6-3.7]")
+file: oatprograms/tc13.oat \n
+Fatal error: exception Typechecker.TypeError("[4, 2] Scall statement wasnt a function")
+file: oatprograms/tc14.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 10] TypeError in CArr")
+file: oatprograms/tc15.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 10] TypeError in CArr")
+file: oatprograms/tc16.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 2] variable is already declared: x")
+file: oatprograms/tc17.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 10] Didnt find Id named: length_of_array")
+file: oatprograms/tc18.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 9] Didnt find Id named: f")
+file: oatprograms/tc19.oat \n
+Fatal error: exception Typechecker.TypeError("[3, 9] TypeError in Call wrong length")
+file: oatprograms/tc2.oat \n
+/tmp/runtime-2f7b47.o: In function `main':
+runtime.c:(.text+0x37d): undefined reference to `program'
+clang-9: error: linker command failed with exit code 1 (use -v to see invocation)
+Fatal error: exception Platform.PlatformError("clang -Wno-override-module -O1 -Wall  -o a.out output/tc2.o runtime.c   ", "Exited with status 1.")
+file: oatprograms/tc20.oat \n
+Fatal error: exception Typechecker.TypeError("[3, 2] SCall param types dont match")
+file: oatprograms/tc3.oat \n
+Fatal error: exception Typechecker.TypeError("[3, 2] expr in if wasn't of type boolean")
+file: oatprograms/tc4.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 9] TypeError in Bop")
+file: oatprograms/tc5.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 10] TypeError in Bop")
+file: oatprograms/tc6.oat \n
+Fatal error: exception Typechecker.TypeError("[3, 21] TypeError in Call")
+file: oatprograms/tc7.oat \n
+Fatal error: exception Typechecker.TypeError("[4, 2] expr not bool in for loop")
+file: oatprograms/tc8.oat \n
+Fatal error: exception Failure("Parse error at: :[2.15-2.16]")
+file: oatprograms/tc9.oat \n
+Fatal error: exception Typechecker.TypeError("[3, 2] Got void return type but expected another type")
+file: oatprograms/tc_ok1.oat \n
+/tmp/runtime-e545fb.o: In function `main':
+runtime.c:(.text+0x37d): undefined reference to `program'
+clang-9: error: linker command failed with exit code 1 (use -v to see invocation)
+Fatal error: exception Platform.PlatformError("clang -Wno-override-module -O1 -Wall  -o a.out output/tc_ok1.o runtime.c   ", "Exited with status 1.")
+file: oatprograms/tc_ok2.oat \n
+/tmp/runtime-eca183.o: In function `main':
+runtime.c:(.text+0x37d): undefined reference to `program'
+clang-9: error: linker command failed with exit code 1 (use -v to see invocation)
+Fatal error: exception Platform.PlatformError("clang -Wno-override-module -O1 -Wall  -o a.out output/tc_ok2.o runtime.c   ", "Exited with status 1.")
+file: oatprograms/tc_ok4.oat \n
+/tmp/runtime-4083c8.o: In function `main':
+runtime.c:(.text+0x37d): undefined reference to `program'
+clang-9: error: linker command failed with exit code 1 (use -v to see invocation)
+Fatal error: exception Platform.PlatformError("clang -Wno-override-module -O1 -Wall  -o a.out output/tc_ok4.o runtime.c   ", "Exited with status 1.")
+file: oatprograms/tc_ok5.oat \n
+/tmp/runtime-0a88cf.o: In function `main':
+runtime.c:(.text+0x37d): undefined reference to `program'
+clang-9: error: linker command failed with exit code 1 (use -v to see invocation)
+Fatal error: exception Platform.PlatformError("clang -Wno-override-module -O1 -Wall  -o a.out output/tc_ok5.o runtime.c   ", "Exited with status 1.")
+file: oatprograms/tc_ok6.oat \n
+/tmp/runtime-46e03e.o: In function `main':
+runtime.c:(.text+0x37d): undefined reference to `program'
+clang-9: error: linker command failed with exit code 1 (use -v to see invocation)
+Fatal error: exception Platform.PlatformError("clang -Wno-override-module -O1 -Wall  -o a.out output/tc_ok6.o runtime.c   ", "Exited with status 1.")
+file: oatprograms/tc_ok7.oat \n
+/tmp/runtime-410057.o: In function `main':
+runtime.c:(.text+0x37d): undefined reference to `program'
+clang-9: error: linker command failed with exit code 1 (use -v to see invocation)
+Fatal error: exception Platform.PlatformError("clang -Wno-override-module -O1 -Wall  -o a.out output/tc_ok7.o runtime.c   ", "Exited with status 1.")
+file: oatprograms/tc_ok8.oat \n
+/tmp/runtime-9c47c0.o: In function `main':
+runtime.c:(.text+0x37d): undefined reference to `program'
+clang-9: error: linker command failed with exit code 1 (use -v to see invocation)
+Fatal error: exception Platform.PlatformError("clang -Wno-override-module -O1 -Wall  -o a.out output/tc_ok8.o runtime.c   ", "Exited with status 1.")
+file: oatprograms/toascii.oat \n
+Fatal error: exception Failure("Parse error at: :[21.26-21.27]")
+file: oatprograms/toposort.oat \n
+Fatal error: exception Failure("Parse error at: :[5.20-5.21]")
+file: oatprograms/union_find.oat \n
+Fatal error: exception Failure("Parse error at: :[3.24-3.25]")
+file: oatprograms/xor_bool.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: oatprograms/xor_shift.oat \n
+838867572
+2281719060--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: hw5programs/apoth_composition.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 18
+file: hw5programs/burowski_bfs.oat \n
+Fatal error: exception Typechecker.TypeError("[42, 8] TypeError in CStruct fields")
+file: hw5programs/chmartin_heapsort.oat \n
+Fatal error: exception Failure("Parse error at: :[59.51-59.52]")
+file: hw5programs/compile_array_fptr.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 2
+file: hw5programs/compile_assign_struct.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 16
+file: hw5programs/compile_basic_struct.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 7
+file: hw5programs/compile_builtin_argument.oat \n
+abab--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: hw5programs/compile_func_argument.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 4
+file: hw5programs/compile_function_shadow.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 12
+file: hw5programs/compile_global_array.oat \n
+Fatal error: exception Failure("Parse error at: :[7.19-7.20]")
+file: hw5programs/compile_global_fptr.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 7
+file: hw5programs/compile_global_fptr_unordered.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 2
+file: hw5programs/compile_global_struct.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 254
+file: hw5programs/compile_global_struct_fptr.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 20
+file: hw5programs/compile_local_fptr.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 5
+file: hw5programs/compile_nested_struct.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 10
+file: hw5programs/compile_object_like.oat \n
+Fatal error: exception Failure("Parse error at: :[11.17-11.18]")
+file: hw5programs/compile_return_struct.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: hw5programs/compile_scall_fptr.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 4
+file: hw5programs/compile_struct_array.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 15
+file: hw5programs/compile_struct_fptr.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 7
+file: hw5programs/compile_struct_lhs.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 21
+file: hw5programs/compile_struct_reordered.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 3
+file: hw5programs/compile_var_fptr.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: hw5programs/compile_various_fields.oat \n
+hello--------------------------------------------------------------- Executing: a.out
+* a.out returned 253
+file: hw5programs/davidcao_treefunctions.oat \n
+Fatal error: exception Typechecker.TypeError("[67, 11] TypeError in CStruct fields")
+file: hw5programs/gregor.oat \n
+Fatal error: exception Failure("Parse error at: :[3.0-3.1]")
+file: hw5programs/hand_rgb_to_gray.oat \n
+Fatal error: exception Failure("Parse error at: :[70.17-70.18]")
+file: hw5programs/hta_map_reduce.oat \n
+Fatal error: exception Failure("Parse error at: :[3.23-3.24]")
+file: hw5programs/initarr1.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: hw5programs/initarr2.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 2
+file: hw5programs/jacbrad_kruskal.oat \n
+Fatal error: exception Failure("Parse error at: :[34.24-34.25]")
+file: hw5programs/johnhew_pagerank.oat \n
+Fatal error: exception Failure("Parse error at: :[52.34-52.35]")
+file: hw5programs/kyim_test.oat \n
+Fatal error: exception Failure("Parse error at: :[1.20-1.21]")
+file: hw5programs/length1.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 5
+file: hw5programs/length2.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 3
+file: hw5programs/leqiliu_traversal.oat \n
+Fatal error: exception Typechecker.TypeError("[52, 17] TypeError in CStruct fields")
+file: hw5programs/maale_odd_even.oat \n
+0125306599200--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: hw5programs/minski_pythagorean.oat \n
+Fatal error: exception Failure("Parse error at: :[44.24-44.25]")
+file: hw5programs/myprogram.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 8] uop with lognot shouldve been of type bool")
+file: hw5programs/negative_array_index.oat \n
+Out of bounds index -1 for array length 3--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: hw5programs/olekg_fold_struct.oat \n
+Fatal error: exception Typechecker.TypeError("[22, 11] TypeError in CStruct fields")
+file: hw5programs/ssumit_balancedparens.oat \n
+Fatal error: exception Failure("Parse error at: :[43.5-43.11]")
+file: hw5programs/tc_array_err.oat \n
+Fatal error: exception Typechecker.TypeError("[12, 2] Tried to assign wrong type")
+file: hw5programs/tc_arrow.oat \n
+/tmp/runtime-8ea27f.o: In function `main':
+runtime.c:(.text+0x340): multiple definition of `main'
+output/tc_arrow.o:tc_arrow.ll:(.text+0x30): first defined here
+/tmp/runtime-8ea27f.o: In function `main':
+runtime.c:(.text+0x37d): undefined reference to `program'
+clang-9: error: linker command failed with exit code 1 (use -v to see invocation)
+Fatal error: exception Platform.PlatformError("clang -Wno-override-module -O1 -Wall  -o a.out output/tc_arrow.o runtime.c   ", "Exited with status 1.")
+file: hw5programs/tc_arrow_null.oat \n
+/tmp/runtime-114ad2.o: In function `main':
+runtime.c:(.text+0x37d): undefined reference to `program'
+clang-9: error: linker command failed with exit code 1 (use -v to see invocation)
+Fatal error: exception Platform.PlatformError("clang -Wno-override-module -O1 -Wall  -o a.out output/tc_arrow_null.o runtime.c   ", "Exited with status 1.")
+file: hw5programs/tc_arrow_null_rec.oat \n
+/tmp/runtime-7bbbf8.o: In function `main':
+runtime.c:(.text+0x37d): undefined reference to `program'
+clang-9: error: linker command failed with exit code 1 (use -v to see invocation)
+Fatal error: exception Platform.PlatformError("clang -Wno-override-module -O1 -Wall  -o a.out output/tc_arrow_null_rec.o runtime.c   ", "Exited with status 1.")
+file: hw5programs/tc_assn_err.oat \n
+Fatal error: exception Failure("Parse error at: :[6.6-6.7]")
+file: hw5programs/tc_correct_array.oat \n
+Out of bounds index 2 for array length 2--------------------------------------------------------------- Executing: a.out
+* a.out returned 1
+file: hw5programs/tc_correct_call.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 7
+file: hw5programs/tc_correct_for.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: hw5programs/tc_correct_fptr.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 7
+file: hw5programs/tc_correct_fptr_array.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: hw5programs/tc_correct_function_shadow.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 12
+file: hw5programs/tc_correct_global.oat \n
+helloworld3true--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: hw5programs/tc_correct_if.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: hw5programs/tc_correct_local_redeclaration.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 2
+file: hw5programs/tc_correct_null.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 10] TypeError in CArr")
+file: hw5programs/tc_correct_struct.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 3
+file: hw5programs/tc_correct_struct_fptr.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 7
+file: hw5programs/tc_correct_void.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: hw5programs/tc_correct_while.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 3
+file: hw5programs/tc_error_array1.oat \n
+Fatal error: exception Typechecker.TypeError("[3, 2] Tried to assign wrong type")
+file: hw5programs/tc_error_array2.oat \n
+Fatal error: exception Typechecker.TypeError("[3, 12] TypeError in NewArr")
+file: hw5programs/tc_error_assign_void.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 10] TypeError in Call")
+file: hw5programs/tc_error_binop1.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 9] TypeError in Bop")
+file: hw5programs/tc_error_binop2.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 9] TypeError in Bop")
+file: hw5programs/tc_error_binop3.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 9] TypeError in Bop")
+file: hw5programs/tc_error_call1.oat \n
+Fatal error: exception Typechecker.TypeError("[6, 9] TypeError in Call wrong length")
+file: hw5programs/tc_error_call2.oat \n
+Fatal error: exception Typechecker.TypeError("[6, 9] TypeError in Call")
+file: hw5programs/tc_error_dupstruct.oat \n
+Fatal error: exception Typechecker.TypeError("[5, 0] Duplicate struct with name: L")
+file: hw5programs/tc_error_early_return.oat \n
+Fatal error: exception Typechecker.TypeError("[3, 2] We already had an return in program")
+file: hw5programs/tc_error_early_return_void.oat \n
+Fatal error: exception Typechecker.TypeError("[3, 2] We already had an return in f")
+file: hw5programs/tc_error_for.oat \n
+Fatal error: exception Typechecker.TypeError("[1, 0] No return statement in program")
+file: hw5programs/tc_error_func_assign.oat \n
+Fatal error: exception Typechecker.TypeError("[10, 3] lefthandside of assignment is globalfunction with name: f")
+file: hw5programs/tc_error_func_redeclaration.oat \n
+Fatal error: exception Typechecker.TypeError("[5, 0] Duplicate function with name: id")
+file: hw5programs/tc_error_function_no_shadow.oat \n
+Fatal error: exception Typechecker.TypeError("[11, 9] TypeError in Call wrong length")
+file: hw5programs/tc_error_global.oat \n
+Fatal error: exception Typechecker.TypeError("[5, 2] Tried to assign wrong type")
+file: hw5programs/tc_error_global_dup.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 0] Duplicate function with name: x")
+file: hw5programs/tc_error_global_fptr_scope.oat \n
+Fatal error: exception Typechecker.TypeError("[6, 11] Didnt find Id named: x")
+file: hw5programs/tc_error_if.oat \n
+Fatal error: exception Typechecker.TypeError("[1, 0] No return statement in program")
+file: hw5programs/tc_error_if_nonbool.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 2] expr in if wasn't of type boolean")
+file: hw5programs/tc_error_null.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 10] TypeError in CArr")
+file: hw5programs/tc_error_overwrite.oat \n
+Fatal error: exception Typechecker.TypeError("[3, 2] variable is already declared: x")
+file: hw5programs/tc_error_return_wrong.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 2] Wrong return type")
+file: hw5programs/tc_error_scall_nonvoid.oat \n
+Fatal error: exception Typechecker.TypeError("[7, 2] Scall statement wasnt a function")
+file: hw5programs/tc_error_struct.oat \n
+Fatal error: exception Typechecker.TypeError("[7, 10] TypeError in CStruct fields")
+file: hw5programs/tc_error_struct1.oat \n
+Fatal error: exception Typechecker.TypeError("[7, 10] TypeError in CStruct fields")
+file: hw5programs/tc_error_struct2.oat \n
+Fatal error: exception Typechecker.TypeError("[7, 10] TypeError length is wrong")
+file: hw5programs/tc_error_struct3.oat \n
+Fatal error: exception Typechecker.TypeError("[7, 10] TypeError length is wrong")
+file: hw5programs/tc_error_struct4.oat \n
+Fatal error: exception Typechecker.TypeError("[7, 10] TypeError length is wrong")
+file: hw5programs/tc_error_struct_dup.oat \n
+Fatal error: exception Typechecker.TypeError("[1, 0] Repeated fields in X")
+file: hw5programs/tc_error_struct_proj.oat \n
+Fatal error: exception Typechecker.TypeError("[11, 9] TypeError in Proj Field not found")
+file: hw5programs/tc_error_struct_unbound.oat \n
+Fatal error: exception Typechecker.TypeError("[1, 0] TypeError in typeref for S")
+file: hw5programs/tc_error_unop1.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 9] uop with lognot shouldve been of type bool")
+file: hw5programs/tc_error_void.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 2] Expected Void as return type")
+file: hw5programs/tc_error_while.oat \n
+Fatal error: exception Typechecker.TypeError("[1, 0] No return statement in program")
+file: hw5programs/tc_error_while_nonbool.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 2] wrong typed condition in while")
+file: hw5programs/tc_func_arg_err.oat \n
+Fatal error: exception Typechecker.TypeError("[20, 2] Tried to assign wrong type")
+file: hw5programs/tc_func_arg_ok.oat \n
+output/tc_func_arg_ok.ll:21:36: error: '%_x1' defined with type 'i64 (%B*)**' but expected 'i64 (%A*)**'
+  store i64 (%A*)* @f, i64 (%A*)** %_x1
+                                   ^
+1 error generated.
+Fatal error: exception Platform.PlatformError("clang -S -O1 -Wall -Wno-override-module  -o output/tc_func_arg_ok.s output/tc_func_arg_ok.ll", "Exited with status 1.")
+file: hw5programs/tc_func_ret_err.oat \n
+Fatal error: exception Typechecker.TypeError("[20, 2] Tried to assign wrong type")
+file: hw5programs/tc_func_ret_ok.oat \n
+output/tc_func_ret_ok.ll:27:30: error: '%_x1' defined with type '%A* ()**' but expected '%B* ()**'
+  store %B* ()* @g, %B* ()** %_x1
+                             ^
+1 error generated.
+Fatal error: exception Platform.PlatformError("clang -S -O1 -Wall -Wno-override-module  -o output/tc_func_ret_ok.s output/tc_func_ret_ok.ll", "Exited with status 1.")
+file: hw5programs/tc_ifq1.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 10
+file: hw5programs/tc_ifq_err1.oat \n
+Fatal error: exception Typechecker.TypeError("[5, 4] nullref wasnt subtype of ref: s")
+file: hw5programs/tc_null_array_err.oat \n
+Fatal error: exception Typechecker.TypeError("[4, 9] TypeError in Index")
+file: hw5programs/tc_recursive_struct_err.oat \n
+Fatal error: exception Typechecker.TypeError("[11, 2] Tried to assign wrong type")
+file: hw5programs/tc_struct_bad.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 10] TypeError in CArr")
+file: hw5programs/tc_struct_err.oat \n
+Fatal error: exception Typechecker.TypeError("[20, 2] Tried to assign wrong type")
+file: hw5programs/tc_struct_field_err.oat \n
+Fatal error: exception Typechecker.TypeError("[20, 2] Tried to assign wrong type")
+file: hw5programs/tc_struct_ok.oat \n
+output/tc_struct_ok.ll:29:29: error: '%_x2' defined with type '%A**' but expected '%B**'
+  store %B* %_result3, %B** %_x2
+                            ^
+1 error generated.
+Fatal error: exception Platform.PlatformError("clang -S -O1 -Wall -Wno-override-module  -o output/tc_struct_ok.s output/tc_struct_ok.ll", "Exited with status 1.")
+file: hw5programs/tc_subtyping1.oat \n
+/tmp/runtime-0a5b1d.o: In function `main':
+runtime.c:(.text+0x37d): undefined reference to `program'
+clang-9: error: linker command failed with exit code 1 (use -v to see invocation)
+Fatal error: exception Platform.PlatformError("clang -Wno-override-module -O1 -Wall  -o a.out output/tc_subtyping1.o runtime.c   ", "Exited with status 1.")
+file: hw5programs/tc_subtyping2.oat \n
+output/tc_subtyping2.ll:12:24: error: '%_a4' defined with type '%A**' but expected '%B**'
+  store %B* %_b5, %B** %_a4
+                       ^
+1 error generated.
+Fatal error: exception Platform.PlatformError("clang -S -O1 -Wall -Wno-override-module  -o output/tc_subtyping2.s output/tc_subtyping2.ll", "Exited with status 1.")
+file: hw5programs/tc_subtyping3.oat \n
+output/tc_subtyping3.ll:12:24: error: '%_a4' defined with type '%A**' but expected '%B**'
+  store %B* %_b5, %B** %_a4
+                       ^
+1 error generated.
+Fatal error: exception Platform.PlatformError("clang -S -O1 -Wall -Wno-override-module  -o output/tc_subtyping3.s output/tc_subtyping3.ll", "Exited with status 1.")
+file: hw5programs/tc_subtyping4.oat \n
+output/tc_subtyping4.ll:12:24: error: '%_a4' defined with type '%A**' but expected '%B**'
+  store %B* %_b5, %B** %_a4
+                       ^
+1 error generated.
+Fatal error: exception Platform.PlatformError("clang -S -O1 -Wall -Wno-override-module  -o output/tc_subtyping4.s output/tc_subtyping4.ll", "Exited with status 1.")
+file: hw5programs/tc_subtyping5.oat \n
+output/tc_subtyping5.ll:15:24: error: '%_a6' defined with type '%A**' but expected '%B**'
+  store %B* %_b7, %B** %_a6
+                       ^
+1 error generated.
+Fatal error: exception Platform.PlatformError("clang -S -O1 -Wall -Wno-override-module  -o output/tc_subtyping5.s output/tc_subtyping5.ll", "Exited with status 1.")
+file: hw5programs/tc_subtyping6.oat \n
+/tmp/runtime-ec466a.o: In function `main':
+runtime.c:(.text+0x37d): undefined reference to `program'
+clang-9: error: linker command failed with exit code 1 (use -v to see invocation)
+Fatal error: exception Platform.PlatformError("clang -Wno-override-module -O1 -Wall  -o a.out output/tc_subtyping6.o runtime.c   ", "Exited with status 1.")
+file: hw5programs/tc_subtyping7.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 2
+file: hw5programs/tc_subtyping8.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: hw5programs/tc_subtyping9.oat \n
+--------------------------------------------------------------- Executing: a.out
+* a.out returned 0
+file: hw5programs/tc_subtyping_err1.oat \n
+Fatal error: exception Typechecker.TypeError("[2, 2] Tried to assign wrong type")
+file: hw5programs/tc_subtyping_err2.oat \n
+Fatal error: exception Typechecker.TypeError("[5, 2] Tried to assign wrong type")
+file: hw5programs/tc_subtyping_err3.oat \n
+Fatal error: exception Typechecker.TypeError("[5, 2] Tried to assign wrong type")
+file: hw5programs/tc_subtyping_err4.oat \n
+Fatal error: exception Typechecker.TypeError("[5, 2] Tried to assign wrong type")
+file: hw5programs/tc_subtyping_err5.oat \n
+Fatal error: exception Typechecker.TypeError("[5, 2] Tried to assign wrong type")
+file: hw5programs/tc_subtyping_err6.oat \n
+Fatal error: exception Typechecker.TypeError("[5, 2] Tried to assign wrong type")
+file: hw5programs/tc_subtyping_err7.oat \n
+Fatal error: exception Typechecker.TypeError("[5, 2] Wrong return type")
+file: hw5programs/tc_subtyping_err8.oat \n
+Fatal error: exception Typechecker.TypeError("[17, 2] SCall param types dont match")
+file: hw5programs/whartonv_calculator.oat \n
+Fatal error: exception Typechecker.TypeError("[19, 9] TypeError in CStruct fields")
+file: hw5programs/yingjiao_floydwarshall.oat \n
+Fatal error: exception Failure("Parse error at: :[27.25-27.26]")
