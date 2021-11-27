@@ -503,6 +503,7 @@ let typecheck_tdecl (tc : Tctxt.t) id fs (l : 'a Ast.node) : unit =
     - typechecks the body of the function (passing in the expected return type
     - checks that the function actually returns
 *)
+
 let typecheck_fdecl (tc : Tctxt.t) (f : Ast.fdecl) (l : 'a Ast.node) : unit =
   let rec checker (c : Tctxt.local_ctxt) vn : bool =
     match c with
@@ -511,7 +512,7 @@ let typecheck_fdecl (tc : Tctxt.t) (f : Ast.fdecl) (l : 'a Ast.node) : unit =
   in
 
   let helper (c : Tctxt.t) (arg : Ast.ty * Ast.id) : Tctxt.t =
-    if checker tc.locals (snd arg) then
+    if checker c.locals (snd arg) then
       type_error l @@ "Two params have the same name: " ^ snd arg
     else Tctxt.add_local c (snd arg) (fst arg)
   in

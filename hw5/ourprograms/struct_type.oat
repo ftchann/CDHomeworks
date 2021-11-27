@@ -1,0 +1,8 @@
+struct Color {
+  int red;
+  int red
+}
+
+int program (int argc, string[] argv) {
+  return 0;
+}

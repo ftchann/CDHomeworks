@@ -1,0 +1,7 @@
+int foo(int x, int x) {
+  return x;
+}
+
+int program (int argc, string[] argv) {
+  return 0;
+}

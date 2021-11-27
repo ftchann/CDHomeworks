@@ -8,7 +8,8 @@ open Gradedtests
 
 let tc_err_tests = [
   "ourprograms/while_rettype.oat";
-  "ourprograms/struct_type.oat"
+  "ourprograms/struct_type.oat";
+  "ourprograms/function_name.oat";
 ]
 
 let tc_ok_tests = [
