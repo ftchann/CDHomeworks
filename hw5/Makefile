@@ -1,4 +1,4 @@
-INCLUDES= util,x86,grading,ll
+INCLUDES= util,x86,grading,ll,sharedtests,sharedtests/05
 LIBS = unix,str
 SUBMIT := frontend.ml typechecker.ml team.txt
 

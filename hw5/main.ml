@@ -3,8 +3,9 @@ open Arg
 open Assert
 open Driver
 
+
 exception Ran_tests
-let suite = ref (Studenttests.provided_tests @ Gradedtests.graded_tests)
+let suite = ref (Studenttests.provided_tests @ Gradedtests.graded_tests @ Sharedtests.shared_suite)
 
 let execute_tests () =
   Platform.configure_os ();
