@@ -580,7 +580,7 @@ and cmp_stmt (tc : TypeCtxt.t) (c : Ctxt.t) (rt : Ll.ty) (stmt : Ast.stmt node)
         >:: I (guard, Icmp (Ll.Ne, ll_ty, e_op, Null))
         >:: T (Cbr (Id guard, lt, le))
         >:: L lt
-        >:: I (name, Alloca ll_ty)
+        >:: E (name, Alloca ll_ty)
         >:: I ("", Store (ll_ty, e_op, Ll.Id name))
         >@ notnull_code >:: T (Br lm) >:: L le >@ null_code >:: T (Br lm)
         >:: L lm )
