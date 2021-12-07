@@ -4,5 +4,3 @@ B _build/**
 S .
 S *
 S **
-B _build/sharedtests/**
-S sharedtests/**
