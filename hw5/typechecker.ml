@@ -467,13 +467,11 @@ let rec typecheck_stmt (tc : Tctxt.t) (s : Ast.stmt node) (to_ret : ret_ty) :
       let new_c =
         List.fold_left
           (fun (c : Tctxt.t) (id, expr) ->
-            let e = typecheck_exp c expr in
             let opt = Tctxt.lookup_local_option id c in
-            let _ = match opt with
+            match opt with
             | Some _ -> type_error s @@ "already defined"
             | None ->
               let e = typecheck_exp c expr in
-              Tctxt.add_local c id e in
             Tctxt.add_local c id e)
           tc vdecls
       in
