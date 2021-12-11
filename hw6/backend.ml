@@ -2,6 +2,7 @@
 open Ll
 open Llutil
 open X86
+open Datastructures
 
 
 (* allocated llvmlite function bodies --------------------------------------- *)
@@ -740,7 +741,120 @@ let greedy_layout (f:Ll.fdecl) (live:liveness) : layout =
 *)
 
 let better_layout (f:Ll.fdecl) (live:liveness) : layout =
-  greedy_layout f live
+  let n_arg = ref 0 in
+  let n_spill = ref 0 in
+
+  let spill () = (incr n_spill; Alloc.LStk (- !n_spill)) in
+  
+  (* Allocates a destination location for an incoming function parameter.
+     Corner case: argument 3, in Rcx occupies a register used for other
+     purposes by the compiler.  We therefore always spill it.
+  *)
+  let alloc_arg () =
+    let res =
+      match arg_loc !n_arg with
+      | Alloc.LReg Rcx -> spill ()
+      | x -> x
+    in
+    incr n_arg; res
+  in
+
+  (* The available palette of registers.  Excludes Rax and Rcx *)
+  let pal = LocSet.(caller_save 
+                    |> remove (Alloc.LReg Rax)
+                    |> remove (Alloc.LReg Rcx)                       
+                   )
+  in
+
+  let uid_list = fold_fdecl
+    (fun l (x, _) -> x::l)
+    (fun l _ -> l)
+    (fun l (x, i) ->
+      if insn_assigns i 
+      then x::l
+      else l)
+    (fun l (x, _) -> x::l)
+    [] f 
+  in
+
+  let zipped = List.map (fun x -> (x, (Datastructures.uids []))) uid_list in
+
+  let graph = Datastructures.uidm zipped in
+  (* Add Edges*)
+
+  (* Map (uid -> (UID SET))*)
+  let liv g (uid:string) = 
+    let edges = live.live_out uid in
+    let edges_list = UidS.elements edges in
+
+    let helper g (uid:string) =
+      let others = UidS.remove uid edges in
+      let old_neighbours =  UidM.find uid g in
+      let new_neighbours = UidS.union old_neighbours others in
+      let newg = UidM.add uid new_neighbours g in
+      newg
+    in
+
+    let newg = List.fold_left helper g edges_list in 
+    newg 
+  in
+
+  let graph2 = List.fold_left liv graph uid_list in
+
+
+  let zip2 = List.map (fun x -> (x, -1)) uid_list in
+  let colors = Datastructures.uidm zip2 in
+
+  (* giga greedy *)
+  let greedycoloring c (uid:string) =
+    let neighbours = UidM.find uid graph2 in
+    let neighbours_list = UidS.elements neighbours in
+    let neighbours_color = List.map (fun x -> UidM.find x c) neighbours_list in
+    let sorted = List.sort compare neighbours_color in
+    
+    let _, color = List.fold_left (fun (x, color) n_color -> 
+      if color = None then 
+        if x <> n_color then (x+1, Some x)
+        else (x+1, None)
+      else (x+1, color)
+      ) (0, None) sorted in 
+
+    let endcolor = 
+      match color with 
+      | None -> List.length sorted
+      | Some x -> x
+    in
+    UidM.add uid endcolor c
+  in
+
+  let mapped = List.fold_left greedycoloring colors uid_list in
+
+
+
+  let allocate lo uid =
+    let loc =
+      (*let color = UidM.find uid mapped in
+      arg_loc color*)
+      alloc_arg ()
+    in
+    Platform.verb @@ Printf.sprintf "allocated: %s <- %s\n" (Alloc.str_loc loc) uid; loc
+  in
+
+
+  let lo =
+    fold_fdecl
+      (fun lo (x, _) -> (x, alloc_arg())::lo)
+      (fun lo l -> (l, Alloc.LLbl (Platform.mangle l))::lo)
+      (fun lo (x, i) ->
+        if insn_assigns i 
+        then (x, allocate lo x)::lo
+        else (x, Alloc.LVoid)::lo)
+      (fun lo _ -> lo)
+      [] f in
+  { uid_loc = (fun x -> List.assoc x lo)
+  ; spill_bytes = 8 * !n_spill
+  }
+  
 
 
 
