@@ -33,12 +33,13 @@ type fact = SymPtr.t UidM.t
    - Other instructions do not define pointers
 
  *)
+
 let insn_flow ((u,i):uid * insn) (d:fact) : fact =
 
   let helper (f:fact) (ty, op) : fact =
     match ty, op with 
     | Ptr _ , Id x 
-    | Ptr _, Gid x -> UidM.add x SymPtr.MayAlias f
+    | Ptr _ , Gid x -> UidM.add x SymPtr.MayAlias f
     | _ -> f
   in
 
@@ -46,17 +47,15 @@ let insn_flow ((u,i):uid * insn) (d:fact) : fact =
   | Alloca _ -> UidM.add u SymPtr.Unique d
   | Call (ty, _, opl) -> 
     List.fold_left helper d (opl@[(ty,Id u)]) 
-  | Load (ty, op) ->
-    let newd =  UidM.add u SymPtr.MayAlias d in
-    List.fold_left helper newd [(ty, op)]
-  | Bitcast (ty, op, _) -> 
-    let newd =  UidM.add u SymPtr.MayAlias d in
-    List.fold_left helper newd [(ty, op)]
-  | Gep (_, _, opl) -> 
-    let newd =  UidM.add u SymPtr.MayAlias d in
-    newd
-  | Store (ty, op, _) -> 
-    List.fold_left helper d [(ty, op)]
+  | Load ((Ptr (Ptr _)), _) ->
+    UidM.add u SymPtr.MayAlias d
+  | Bitcast (ty1, op, ty2) -> 
+    List.fold_left helper d [(ty1, op) ;(ty2, Id u)]
+  | Gep (ty, _, ops) -> 
+    let opl = List.map (fun x -> (Ptr Void, x)) ops in
+    List.fold_left helper d (opl@[(ty,Id u)]) 
+  | Store (ty, op1, op2) -> 
+    List.fold_left helper d [(ty, op1)]
   | _ -> UidM.add u SymPtr.UndefAlias d
   
 
@@ -110,6 +109,8 @@ module Fact =
       in
 
       List.fold_left helper UidM.empty ds
+
+
 
   end
 

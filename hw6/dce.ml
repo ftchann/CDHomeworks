@@ -24,7 +24,42 @@ open Datastructures
 let dce_block (lb:uid -> Liveness.Fact.t) 
               (ab:uid -> Alias.fact)
               (b:Ll.block) : Ll.block =
-  failwith "Dce.dce_block unimplemented"
+  (*We will simply compute the results of the analysis at each program point, 
+  then iterate over the blocks of the CFG removing any instructions that do not contribute
+   to the output of the program.
+   
+   For all instructions except store and call, the instruction can be removed if the UID it defines is not live-out at the point of definition
+
+    A store instruction can be remove if we know the UID of the destination pointer is not aliased and not live-out 
+      at the program
+   point of the store
+A call instruction can never be removed
+   *)
+
+  let helper (uid, ins) : bool = 
+    match ins with
+    | Store (_, _, Id x) -> 
+      let live_set = lb uid in
+      if (UidS.mem x live_set) then true
+      else (
+      let alias_set = ab uid in
+        let res = UidM.find_opt x alias_set in
+        match res with
+        | None 
+        | Some Alias.SymPtr.UndefAlias 
+        | Some Alias.SymPtr.Unique -> false
+        | Some Alias.SymPtr.MayAlias -> true
+      )
+    | Call _ -> true
+    | _ -> 
+      let live_set = lb uid in
+      UidS.mem uid live_set
+  in
+   
+  let newins = List.filter helper b.insns in
+  {insns= newins; term = b.term}
+
+   
 
 let run (lg:Liveness.Graph.t) (ag:Alias.Graph.t) (cfg:Cfg.t) : Cfg.t =
 
