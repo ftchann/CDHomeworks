@@ -784,8 +784,19 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
 
   (* Map (uid -> (UID SET))*)
   let liv (g: UidS.t UidM.t) (uid:string) : UidS.t UidM.t = 
-    let edges = live.live_out uid in
-    let edges_list = UidS.elements edges in
+    let edges = try
+      live.live_out uid
+    with
+    | Not_found -> UidS.empty
+    in
+    let edges2 = try
+      live.live_in uid
+    with
+    | Not_found -> UidS.empty
+    in
+    let edges_list2 = UidS.elements edges in
+    let edges_list = UidS.elements edges2 @ edges_list2 in
+    
 
     let helper (g: UidS.t UidM.t) (uid:string) =
       let others = UidS.remove uid edges in
@@ -830,12 +841,25 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   let mapped = List.fold_left greedycoloring colors uid_list in
 
 
+  let arg_reg2 : int -> X86.reg option = function
+  | 0 -> Some Rdi
+  | 1 -> Some Rsi
+  | 2 -> Some Rdx
+  | 3 -> Some R08
+  | 4 -> Some R09
+  | n -> None
+  in
+
+  let arg_loc2 (n:int) : Alloc.loc = 
+  match arg_reg2 n with
+  | Some r -> Alloc.LReg r
+  | None -> spill ()
+  in
 
   let allocate lo uid =
     let loc =
-      (*let color = UidM.find uid mapped in
-      arg_loc color*)
-      alloc_arg ()
+      let color = UidM.find uid mapped in
+      arg_loc2 color
     in
     Platform.verb @@ Printf.sprintf "allocated: %s <- %s\n" (Alloc.str_loc loc) uid; loc
   in
@@ -843,7 +867,7 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
 
   let lo =
     fold_fdecl
-      (fun lo (x, _) -> (x, alloc_arg())::lo)
+      (fun lo (x, _) -> (x, allocate lo x)::lo)
       (fun lo l -> (l, Alloc.LLbl (Platform.mangle l))::lo)
       (fun lo (x, i) ->
         if insn_assigns i 
