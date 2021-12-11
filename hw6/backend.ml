@@ -783,11 +783,11 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   (* Add Edges*)
 
   (* Map (uid -> (UID SET))*)
-  let liv g (uid:string) = 
+  let liv (g: UidS.t UidM.t) (uid:string) : UidS.t UidM.t = 
     let edges = live.live_out uid in
     let edges_list = UidS.elements edges in
 
-    let helper g (uid:string) =
+    let helper (g: UidS.t UidM.t) (uid:string) =
       let others = UidS.remove uid edges in
       let old_neighbours =  UidM.find uid g in
       let new_neighbours = UidS.union old_neighbours others in
@@ -806,7 +806,7 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   let colors = Datastructures.uidm zip2 in
 
   (* giga greedy *)
-  let greedycoloring c (uid:string) =
+  let greedycoloring (c : int UidM.t) (uid:string) : int UidM.t =
     let neighbours = UidM.find uid graph2 in
     let neighbours_list = UidS.elements neighbours in
     let neighbours_color = List.map (fun x -> UidM.find x c) neighbours_list in
