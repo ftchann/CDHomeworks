@@ -743,9 +743,6 @@ let greedy_layout (f:Ll.fdecl) (live:liveness) : layout =
 *)
 
 let better_layout (f:Ll.fdecl) (live:liveness) : layout =
-  let n_spill = ref 0 in
-
-  let spill () = (incr n_spill; Alloc.LStk (- !n_spill)) in
 
   let uid_list = fold_fdecl
     (fun l (x, _) -> x::l)
@@ -754,7 +751,7 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
       if insn_assigns i 
       then x::l
       else l)
-    (fun l (x, _) -> x::l)
+    (fun l _ -> l)
     [] f 
   in
 
@@ -762,7 +759,7 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   let maxpossiblec = List.length uid_list in
 
   (* how many register we use *)
-  let maxreg = 6 in
+  let maxreg = 8 in
 
   let zipped = List.map (fun x -> (x, (Datastructures.uids []))) uid_list in
 
@@ -865,10 +862,12 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     | 3 -> Alloc.LStk (-1)
     | 4 -> Alloc.LReg (R08)
     | 5 -> Alloc.LReg (R09)
-    | k when (k < maxpossiblec) -> Alloc.LStk (4 - k)
+    | 6 -> Alloc.LReg (R10)
+    | 7 -> Alloc.LReg (R11)
+    (* last map should be maxreg -1 till here .... *)
+    | k when (k < maxpossiblec) -> Alloc.LStk (maxreg -2 - k)
     | k -> Alloc.LStk (k-maxpossiblec+2)
   in
-
 
   let allocate lo uid =
     let loc = 
@@ -887,12 +886,12 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
         if insn_assigns i 
         then (x, allocate lo x)::lo
         else (x, Alloc.LVoid)::lo)
-      (fun lo _ -> lo)
+      (fun lo (x, y) -> lo)
       [] f in
   (* let _ = List.iter(fun (id, loc) -> Printf.printf "%s %s\n" id (Alloc.str_loc loc)) lo in *)
   
   { uid_loc = (fun x -> List.assoc x lo)
-  ; spill_bytes = 8 * !biggestcolor
+  ; spill_bytes = 8* (!biggestcolor)
   }
 
 
