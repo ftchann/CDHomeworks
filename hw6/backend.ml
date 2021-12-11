@@ -775,36 +775,46 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     with
     | Not_found -> UidS.empty
     in
-    let edges_list2 = UidS.elements edges in
-    let edges_list = UidS.elements edges2 @ edges_list2 in(*@ (
+    let edges_list = UidS.elements edges  in
+    let edges_list2 = UidS.elements edges2 in(*@ (
     if (edges_list2@(UidS.elements edges2) = []) then uid_list else []) in
 *)
-    let helper (g: UidS.t UidM.t) (uid:string) =
-      let others = UidS.remove uid edges in
+    let helper (g,e) (uid:string) =
+      let others = UidS.remove uid e in
       let old_neighbours =  UidM.find uid g in
       let new_neighbours = UidS.union old_neighbours others in
       let newg = UidM.add uid new_neighbours g in
       
-      newg
+      newg, e
     in
 
-    let newg = List.fold_left helper g edges_list in 
-    newg 
+    let newg, _ = List.fold_left helper (g,edges) edges_list in 
+    let newgg, _ = List.fold_left helper (newg, edges2) edges_list2 in
+    newgg
   in
 
 
   let graph2 = List.fold_left liv graph uid_list in
 
-
+  (* let _ = UidM.iter (fun uid neighbours_set ->
+    let neighbours = UidS.elements neighbours_set in
+    let n_str = List.fold_left (fun x s-> s ^ " " ^ x) "" neighbours in
+    let _ = Printf.printf "%s: %s\n" uid n_str in
+    ()
+  ) graph2 in *)
 
 
   let zip2 = List.map (fun x -> (x, -1)) uid_list in
   let colorss = Datastructures.uidm zip2 in
 
+
+
   let firstc ((c,x):(int UidM.t)*int) (uid:string) : (int UidM.t) * int =
     (UidM.add uid x c, x+1)
   in  
   let colors, _ = List.fold_left firstc (colorss, 0) f.f_param in
+
+
   
 
   (* giga greedy *)
@@ -812,24 +822,26 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     let neighbours = UidM.find uid graph2 in
     let neighbours_list = UidS.elements neighbours in
     let neighbours_color = List.map (fun x -> UidM.find x c) neighbours_list in
-    let sorted = List.sort compare neighbours_color in
+    let sorted = List.sort_uniq compare neighbours_color in
     
-    let _, color = List.fold_left (fun (x, color) n_color -> 
-      if color = None then 
-        if x <> n_color then (x+1, Some x)
-        else (x+1, None)
-      else (x+1, color)
-      ) (0, None) sorted in 
-
-    let endcolor = 
-      match color with 
-      | None -> List.length sorted
-      | Some x -> x
+    let endcolor l =
+      let rec find min = function
+        | [] -> min
+        | t::r ->
+           if t > min then min
+           else find (t + 1) r
+      in find 0 l
     in
-    UidM.add uid endcolor c
+    
+    UidM.add uid (endcolor sorted) c
   in
 
   let mapped = List.fold_left greedycoloring colors uid_list in
+
+  (* let _ = UidM.iter (fun uid i ->
+    let _ = Printf.printf "%s: %d\n" uid i in
+    ()
+  ) mapped in *)
 
 
   let allocate lo uid =
