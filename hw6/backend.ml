@@ -681,7 +681,7 @@ let greedy_layout (f:Ll.fdecl) (live:liveness) : layout =
       (fun lo _ -> lo)
       [] f in
   (* let _ = List.iter(fun (id, loc) -> Printf.printf "%s %s\n" id (Alloc.str_loc loc)) lo in *)
-  let _ = Printf.printf "spill bytes: %d\n" !n_spill in
+  (*let _ = Printf.printf "spill bytes: %d\n" !n_spill in*)
   { uid_loc = (fun x -> List.assoc x lo)
   ; spill_bytes = 8 * !n_spill
   }
@@ -758,6 +758,12 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     [] f 
   in
 
+  (* maximum of colors used *)
+  let maxpossiblec = List.length uid_list in
+
+  (* how many register we use *)
+  let maxreg = 6 in
+
   let zipped = List.map (fun x -> (x, (Datastructures.uids []))) uid_list in
 
   let graph = Datastructures.uidm zipped in
@@ -810,15 +816,20 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
 
 
   let firstc ((c,x):(int UidM.t)*int) (uid:string) : (int UidM.t) * int =
-    (UidM.add uid x c, x+1)
+    let y = if (x = maxreg) then maxpossiblec else x in
+    (UidM.add uid y c, y+1)
   in  
   let colors, _ = List.fold_left firstc (colorss, 0) f.f_param in
 
-
+  (* since we need to spill rcx*)
+  let biggestcolor = ref 
+  (if (List.length f.f_param > 3) then 1 else 0) in
   
 
   (* giga greedy *)
   let greedycoloring (c : int UidM.t) (uid:string) : int UidM.t =
+    if (UidM.find uid c <> -1) then c
+    else
     let neighbours = UidM.find uid graph2 in
     let neighbours_list = UidS.elements neighbours in
     let neighbours_color = List.map (fun x -> UidM.find x c) neighbours_list in
@@ -832,41 +843,45 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
            else find (t + 1) r
       in find 0 l
     in
-    
-    UidM.add uid (endcolor sorted) c
+    let clr = endcolor sorted in
+    if (clr > (!biggestcolor)) then biggestcolor := clr;
+    UidM.add uid clr c
   in
 
   let mapped = List.fold_left greedycoloring colors uid_list in
 
-  (* let _ = UidM.iter (fun uid i ->
+(*
+  let _ = UidM.iter (fun uid i ->
     let _ = Printf.printf "%s: %d\n" uid i in
     ()
-  ) mapped in *)
+  ) mapped in 
+  *)
+
+  let var_loc n x = 
+    match n with
+    | 0 -> Alloc.LReg (Rdi)
+    | 1 -> Alloc.LReg (Rsi)
+    | 2 -> Alloc.LReg (Rdx)
+    | 3 -> Alloc.LStk (-1)
+    | 4 -> Alloc.LReg (R08)
+    | 5 -> Alloc.LReg (R09)
+    | k when (k < maxpossiblec) -> Alloc.LStk (4 - k)
+    | k -> Alloc.LStk (k-maxpossiblec+2)
+  in
 
 
   let allocate lo uid =
     let loc = 
     let color = UidM.find uid mapped in
-      arg_loc color
+      var_loc color uid
     in
       
     Platform.verb @@ Printf.sprintf "allocated: %s <- %s\n" (Alloc.str_loc loc) uid; loc
   in
 
-  let n_arg = ref 0 in
-
-  let alloc_arg () =
-    let res =
-      match arg_loc !n_arg with
-      | Alloc.LReg Rcx -> spill ()
-      | x -> x
-    in
-    incr n_arg; res
-  in
-
   let lo =
     fold_fdecl
-      (fun lo (x, _) -> (x, alloc_arg())::lo)
+      (fun lo (x, _) -> (x, allocate lo x)::lo)
       (fun lo l -> (l, Alloc.LLbl (Platform.mangle l))::lo)
       (fun lo (x, i) ->
         if insn_assigns i 
@@ -874,9 +889,10 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
         else (x, Alloc.LVoid)::lo)
       (fun lo _ -> lo)
       [] f in
-  let _ = List.iter(fun (id, loc) -> Printf.printf "%s %s\n" id (Alloc.str_loc loc)) lo in
+  (* let _ = List.iter(fun (id, loc) -> Printf.printf "%s %s\n" id (Alloc.str_loc loc)) lo in *)
+  
   { uid_loc = (fun x -> List.assoc x lo)
-  ; spill_bytes = 8 * !n_spill
+  ; spill_bytes = 8 * !biggestcolor
   }
 
 
