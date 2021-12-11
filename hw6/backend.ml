@@ -776,14 +776,15 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     | Not_found -> UidS.empty
     in
     let edges_list2 = UidS.elements edges in
-    let edges_list = UidS.elements edges2 @ edges_list2 in
-    
-
+    let edges_list = UidS.elements edges2 @ edges_list2 in(*@ (
+    if (edges_list2@(UidS.elements edges2) = []) then uid_list else []) in
+*)
     let helper (g: UidS.t UidM.t) (uid:string) =
       let others = UidS.remove uid edges in
       let old_neighbours =  UidM.find uid g in
       let new_neighbours = UidS.union old_neighbours others in
       let newg = UidM.add uid new_neighbours g in
+      
       newg
     in
 
@@ -791,7 +792,10 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     newg 
   in
 
+
   let graph2 = List.fold_left liv graph uid_list in
+
+
 
 
   let zip2 = List.map (fun x -> (x, -1)) uid_list in
@@ -858,7 +862,7 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
         else (x, Alloc.LVoid)::lo)
       (fun lo _ -> lo)
       [] f in
-  (* let _ = List.iter(fun (id, loc) -> Printf.printf "%s %s\n" id (Alloc.str_loc loc)) lo in *)
+  let _ = List.iter(fun (id, loc) -> Printf.printf "%s %s\n" id (Alloc.str_loc loc)) lo in
   { uid_loc = (fun x -> List.assoc x lo)
   ; spill_bytes = 8 * !n_spill
   }
