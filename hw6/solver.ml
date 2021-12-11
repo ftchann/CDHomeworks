@@ -127,5 +127,6 @@ module Make (Fact : FACT) (Graph : DFA_GRAPH with type fact := Fact.t) =
             ) ;
       done ;
       !gg
+
   end
 

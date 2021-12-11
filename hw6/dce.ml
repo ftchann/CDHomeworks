@@ -38,7 +38,7 @@ A call instruction can never be removed
 
   let helper (uid, ins) : bool = 
     match ins with
-    | Store (_, _, Id x) -> 
+    | Store (_, _, Id x) ->
       let live_set = lb uid in
       if (UidS.mem x live_set) then true
       else (
@@ -50,6 +50,8 @@ A call instruction can never be removed
         | Some Alias.SymPtr.Unique -> false
         | Some Alias.SymPtr.MayAlias -> true
       )
+    (* always true with gid *)
+    | Store _ -> true
     | Call _ -> true
     | _ -> 
       let live_set = lb uid in

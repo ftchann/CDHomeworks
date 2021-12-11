@@ -54,8 +54,8 @@ let insn_flow ((u,i):uid * insn) (d:fact) : fact =
   | Gep (ty, _, ops) -> 
     let opl = List.map (fun x -> (Ptr Void, x)) ops in
     List.fold_left helper d (opl@[(ty,Id u)]) 
-  | Store (ty, op1, op2) -> 
-    List.fold_left helper d [(ty, op1)]
+  | Store (ty, _, op2) -> 
+    List.fold_left helper d [(ty, op2)]
   | _ -> UidM.add u SymPtr.UndefAlias d
   
 
@@ -98,8 +98,8 @@ module Fact =
           fun (key:string) (t1:SymPtr.t) (t2:SymPtr.t) -> 
             let x: SymPtr.t = begin match t1, t2 with
             | Unique, Unique -> Unique
-            | Unique, MayAlias -> Unique
-            | MayAlias, Unique -> Unique
+            | Unique, MayAlias -> MayAlias
+            | MayAlias, Unique -> MayAlias
             | MayAlias, MayAlias -> MayAlias
             | UndefAlias, x -> x
             | x, UndefAlias -> x

@@ -49,7 +49,7 @@ let insn_flow (u,i:uid * insn) (d:fact) : fact =
           | None -> SymConst.UndefConst 
           | Some x -> x
         )
-      | Null -> failwith "operand Null"
+      | Null -> SymConst.UndefConst
       in
       
       let calc x y =
