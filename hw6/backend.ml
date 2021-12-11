@@ -680,6 +680,8 @@ let greedy_layout (f:Ll.fdecl) (live:liveness) : layout =
         else (x, Alloc.LVoid)::lo)
       (fun lo _ -> lo)
       [] f in
+  (* let _ = List.iter(fun (id, loc) -> Printf.printf "%s %s\n" id (Alloc.str_loc loc)) lo in *)
+  let _ = Printf.printf "spill bytes: %d\n" !n_spill in
   { uid_loc = (fun x -> List.assoc x lo)
   ; spill_bytes = 8 * !n_spill
   }
@@ -741,30 +743,9 @@ let greedy_layout (f:Ll.fdecl) (live:liveness) : layout =
 *)
 
 let better_layout (f:Ll.fdecl) (live:liveness) : layout =
-  let n_arg = ref 0 in
   let n_spill = ref 0 in
 
   let spill () = (incr n_spill; Alloc.LStk (- !n_spill)) in
-  
-  (* Allocates a destination location for an incoming function parameter.
-     Corner case: argument 3, in Rcx occupies a register used for other
-     purposes by the compiler.  We therefore always spill it.
-  *)
-  let alloc_arg () =
-    let res =
-      match arg_loc !n_arg with
-      | Alloc.LReg Rcx -> spill ()
-      | x -> x
-    in
-    incr n_arg; res
-  in
-
-  (* The available palette of registers.  Excludes Rax and Rcx *)
-  let pal = LocSet.(caller_save 
-                    |> remove (Alloc.LReg Rax)
-                    |> remove (Alloc.LReg Rcx)                       
-                   )
-  in
 
   let uid_list = fold_fdecl
     (fun l (x, _) -> x::l)
@@ -814,7 +795,13 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
 
 
   let zip2 = List.map (fun x -> (x, -1)) uid_list in
-  let colors = Datastructures.uidm zip2 in
+  let colorss = Datastructures.uidm zip2 in
+
+  let firstc ((c,x):(int UidM.t)*int) (uid:string) : (int UidM.t) * int =
+    (UidM.add uid x c, x+1)
+  in  
+  let colors, _ = List.fold_left firstc (colorss, 0) f.f_param in
+  
 
   (* giga greedy *)
   let greedycoloring (c : int UidM.t) (uid:string) : int UidM.t =
@@ -841,33 +828,29 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   let mapped = List.fold_left greedycoloring colors uid_list in
 
 
-  let arg_reg2 : int -> X86.reg option = function
-  | 0 -> Some Rdi
-  | 1 -> Some Rsi
-  | 2 -> Some Rdx
-  | 3 -> Some R08
-  | 4 -> Some R09
-  | n -> None
-  in
-
-  let arg_loc2 (n:int) : Alloc.loc = 
-  match arg_reg2 n with
-  | Some r -> Alloc.LReg r
-  | None -> spill ()
-  in
-
   let allocate lo uid =
-    let loc =
-      let color = UidM.find uid mapped in
-      arg_loc2 color
+    let loc = 
+    let color = UidM.find uid mapped in
+      arg_loc color
     in
+      
     Platform.verb @@ Printf.sprintf "allocated: %s <- %s\n" (Alloc.str_loc loc) uid; loc
   in
 
+  let n_arg = ref 0 in
+
+  let alloc_arg () =
+    let res =
+      match arg_loc !n_arg with
+      | Alloc.LReg Rcx -> spill ()
+      | x -> x
+    in
+    incr n_arg; res
+  in
 
   let lo =
     fold_fdecl
-      (fun lo (x, _) -> (x, allocate lo x)::lo)
+      (fun lo (x, _) -> (x, alloc_arg())::lo)
       (fun lo l -> (l, Alloc.LLbl (Platform.mangle l))::lo)
       (fun lo (x, i) ->
         if insn_assigns i 
@@ -875,10 +858,10 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
         else (x, Alloc.LVoid)::lo)
       (fun lo _ -> lo)
       [] f in
+  (* let _ = List.iter(fun (id, loc) -> Printf.printf "%s %s\n" id (Alloc.str_loc loc)) lo in *)
   { uid_loc = (fun x -> List.assoc x lo)
   ; spill_bytes = 8 * !n_spill
   }
-  
 
 
 
