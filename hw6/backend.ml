@@ -755,6 +755,13 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     [] f 
   in
 
+  let blub = (fst (f.f_cfg)).insns in
+  let firstUID = match blub with
+    | x::y -> [fst x]
+    | [] -> []
+  in
+
+
   (* maximum of colors used *)
   let maxpossiblec = List.length uid_list in
 
@@ -818,6 +825,7 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   in  
   let colors, _ = List.fold_left firstc (colorss, 0) f.f_param in
 
+
   (* since we need to spill rcx*)
   let biggestcolor = ref 
   (if (List.length f.f_param > 3) then 1 else 0) in
@@ -859,11 +867,11 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     | 0 -> Alloc.LReg (Rdi)
     | 1 -> Alloc.LReg (Rsi)
     | 2 -> Alloc.LReg (Rdx)
-    | 3 -> Alloc.LStk (-1)
+    | 7 -> Alloc.LStk (-1)
     | 4 -> Alloc.LReg (R08)
     | 5 -> Alloc.LReg (R09)
-    | 6 -> Alloc.LReg (R10)
-    | 7 -> Alloc.LReg (R11)
+    | 3 -> Alloc.LReg (R10)
+    | 6 -> Alloc.LReg (R11)
     (* last map should be maxreg -1 till here .... *)
     | k when (k < maxpossiblec) -> Alloc.LStk (maxreg -2 - k)
     | k -> Alloc.LStk (k-maxpossiblec+2)
