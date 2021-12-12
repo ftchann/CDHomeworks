@@ -755,13 +755,6 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     [] f 
   in
 
-  let blub = (fst (f.f_cfg)).insns in
-  let firstUID = match blub with
-    | x::y -> [fst x]
-    | [] -> []
-  in
-
-
   (* maximum of colors used *)
   let maxpossiblec = List.length uid_list in
 
@@ -861,20 +854,22 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     ()
   ) mapped in 
   *)
+  let flag = ref false in
 
   let var_loc n x = 
+    if n > 6 && n < maxpossiblec then flag:=true;
     match n with
     | 0 -> Alloc.LReg (Rdi)
     | 1 -> Alloc.LReg (Rsi)
     | 2 -> Alloc.LReg (Rdx)
-    | 7 -> Alloc.LStk (-1)
     | 4 -> Alloc.LReg (R08)
     | 5 -> Alloc.LReg (R09)
     | 3 -> Alloc.LReg (R10)
     | 6 -> Alloc.LReg (R11)
+    | 7 -> Alloc.LStk (-1)
     (* last map should be maxreg -1 till here .... *)
     | k when (k < maxpossiblec) -> Alloc.LStk (maxreg -2 - k)
-    | k -> Alloc.LStk (k-maxpossiblec+2)
+    | k -> Alloc.LStk (k-maxpossiblec+3)
   in
 
   let allocate lo uid =
@@ -899,7 +894,7 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   (* let _ = List.iter(fun (id, loc) -> Printf.printf "%s %s\n" id (Alloc.str_loc loc)) lo in *)
   
   { uid_loc = (fun x -> List.assoc x lo)
-  ; spill_bytes = 8* (!biggestcolor)
+  ; spill_bytes = if !flag then 8* (!biggestcolor) else 0
   }
 
 

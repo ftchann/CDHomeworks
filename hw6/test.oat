@@ -1,0 +1,15 @@
+int program (int argc, string[] argv) {
+  var x1 = 17;
+  var x2 = 18;
+  var x3 = 18;
+  var x4 = 18;
+  var x5 = 18;
+  var x6 = 18;
+  var x7 = 18;
+  var x8 = 18;
+  var x9 = 18;
+  var x10 = 18;
+
+  
+  return 0;
+}
