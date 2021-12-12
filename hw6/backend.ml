@@ -741,7 +741,6 @@ let greedy_layout (f:Ll.fdecl) (live:liveness) : layout =
 
 let better_layout (f:Ll.fdecl) (live:liveness) : layout =
 
-
   let callflag = ref false in
   let flag = ref false in
   
