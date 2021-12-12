@@ -744,10 +744,17 @@ let greedy_layout (f:Ll.fdecl) (live:liveness) : layout =
 
 let better_layout (f:Ll.fdecl) (live:liveness) : layout =
 
+  let callflag = ref false in
+  let flag = ref false in
+  
   let uid_list = fold_fdecl
     (fun l (x, _) -> x::l)
     (fun l _ -> l)
     (fun l (x, i) ->
+      let _ = match i with
+      | Call _ -> callflag := true
+      | _ -> ()
+      in
       if insn_assigns i 
       then x::l
       else l)
@@ -755,18 +762,20 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     [] f 
   in
 
+
+  
   (* maximum of colors used *)
   let maxpossiblec = List.length uid_list in
 
   (* how many register we use *)
-  let maxreg = 8 in
+  let maxreg = if !callflag then 8 else 12 in
 
   let zipped = List.map (fun x -> (x, (Datastructures.uids []))) uid_list in
 
   let graph = Datastructures.uidm zipped in
   (* Add Edges*)
 
-  (* Map (uid -> (UID SET))*)
+  (* Map (uid -> (UID SET)) *)
   let liv (g: UidS.t UidM.t) (uid:string) : UidS.t UidM.t = 
     let edges = try
       live.live_out uid
@@ -854,9 +863,27 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     ()
   ) mapped in 
   *)
-  let flag = ref false in
+
 
   let var_loc n x = 
+    if not !callflag then    
+    (if n > 10 && n < maxpossiblec then flag:=true;
+    match n with
+    | 0 -> Alloc.LReg (Rdi)
+    | 1 -> Alloc.LReg (Rsi)
+    | 2 -> Alloc.LReg (Rdx)
+    | 4 -> Alloc.LReg (R08)
+    | 5 -> Alloc.LReg (R09)
+    | 3 -> Alloc.LReg (R10)
+    | 6 -> Alloc.LReg (R11)
+    | 7 -> Alloc.LReg (R12)
+    | 8 -> Alloc.LReg (R13)
+    | 9 -> Alloc.LReg (R14)
+    | 10 -> Alloc.LReg (R15)
+    | 11 -> Alloc.LStk (-1)
+    | k when (k < maxpossiblec) -> Alloc.LStk (maxreg -2 - k)
+    | k -> Alloc.LStk (k-maxpossiblec+3))
+    else (
     if n > 6 && n < maxpossiblec then flag:=true;
     match n with
     | 0 -> Alloc.LReg (Rdi)
@@ -869,7 +896,7 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     | 7 -> Alloc.LStk (-1)
     (* last map should be maxreg -1 till here .... *)
     | k when (k < maxpossiblec) -> Alloc.LStk (maxreg -2 - k)
-    | k -> Alloc.LStk (k-maxpossiblec+3)
+    | k -> Alloc.LStk (k-maxpossiblec+3))
   in
 
   let allocate lo uid =
