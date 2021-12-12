@@ -2,7 +2,6 @@
 open Ll
 open Llutil
 open X86
-open Datastructures
 
 
 (* allocated llvmlite function bodies --------------------------------------- *)
@@ -680,8 +679,6 @@ let greedy_layout (f:Ll.fdecl) (live:liveness) : layout =
         else (x, Alloc.LVoid)::lo)
       (fun lo _ -> lo)
       [] f in
-  (* let _ = List.iter(fun (id, loc) -> Printf.printf "%s %s\n" id (Alloc.str_loc loc)) lo in *)
-  (*let _ = Printf.printf "spill bytes: %d\n" !n_spill in*)
   { uid_loc = (fun x -> List.assoc x lo)
   ; spill_bytes = 8 * !n_spill
   }
@@ -744,10 +741,18 @@ let greedy_layout (f:Ll.fdecl) (live:liveness) : layout =
 
 let better_layout (f:Ll.fdecl) (live:liveness) : layout =
 
+
+  let callflag = ref false in
+  let flag = ref false in
+  
   let uid_list = fold_fdecl
     (fun l (x, _) -> x::l)
     (fun l _ -> l)
     (fun l (x, i) ->
+      let _ = match i with
+      | Call _ -> callflag := true
+      | _ -> ()
+      in
       if insn_assigns i 
       then x::l
       else l)
@@ -755,38 +760,40 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     [] f 
   in
 
+
+  
   (* maximum of colors used *)
   let maxpossiblec = List.length uid_list in
 
   (* how many register we use *)
-  let maxreg = 8 in
+  let maxreg = if !callflag then 8 else 12 in
 
   let zipped = List.map (fun x -> (x, (Datastructures.uids []))) uid_list in
 
   let graph = Datastructures.uidm zipped in
   (* Add Edges*)
 
-  (* Map (uid -> (UID SET))*)
-  let liv (g: UidS.t UidM.t) (uid:string) : UidS.t UidM.t = 
+  (* Map (uid -> (UID SET)) *)
+  let liv (g: Datastructures.UidS.t Datastructures.UidM.t) (uid:string) : Datastructures.UidS.t Datastructures.UidM.t = 
     let edges = try
       live.live_out uid
     with
-    | Not_found -> UidS.empty
+    | Not_found -> Datastructures.UidS.empty
     in
     let edges2 = try
       live.live_in uid
     with
-    | Not_found -> UidS.empty
+    | Not_found -> Datastructures.UidS.empty
     in
-    let edges_list = UidS.elements edges  in
-    let edges_list2 = UidS.elements edges2 in(*@ (
+    let edges_list = Datastructures.UidS.elements edges  in
+    let edges_list2 = Datastructures.UidS.elements edges2 in(*@ (
     if (edges_list2@(UidS.elements edges2) = []) then uid_list else []) in
 *)
     let helper (g,e) (uid:string) =
-      let others = UidS.remove uid e in
-      let old_neighbours =  UidM.find uid g in
-      let new_neighbours = UidS.union old_neighbours others in
-      let newg = UidM.add uid new_neighbours g in
+      let others = Datastructures.UidS.remove uid e in
+      let old_neighbours =  Datastructures.UidM.find uid g in
+      let new_neighbours = Datastructures.UidS.union old_neighbours others in
+      let newg = Datastructures.UidM.add uid new_neighbours g in
       
       newg, e
     in
@@ -812,9 +819,9 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
 
 
 
-  let firstc ((c,x):(int UidM.t)*int) (uid:string) : (int UidM.t) * int =
+  let firstc ((c,x):(int Datastructures.UidM.t)*int) (uid:string) : (int Datastructures.UidM.t) * int =
     let y = if (x = maxreg) then maxpossiblec else x in
-    (UidM.add uid y c, y+1)
+    (Datastructures.UidM.add uid y c, y+1)
   in  
   let colors, _ = List.fold_left firstc (colorss, 0) f.f_param in
 
@@ -825,12 +832,12 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   
 
   (* giga greedy *)
-  let greedycoloring (c : int UidM.t) (uid:string) : int UidM.t =
-    if (UidM.find uid c <> -1) then c
+  let greedycoloring (c : int Datastructures.UidM.t) (uid:string) : int Datastructures.UidM.t =
+    if (Datastructures.UidM.find uid c <> -1) then c
     else
-    let neighbours = UidM.find uid graph2 in
-    let neighbours_list = UidS.elements neighbours in
-    let neighbours_color = List.map (fun x -> UidM.find x c) neighbours_list in
+    let neighbours = Datastructures.UidM.find uid graph2 in
+    let neighbours_list = Datastructures.UidS.elements neighbours in
+    let neighbours_color = List.map (fun x -> Datastructures.UidM.find x c) neighbours_list in
     let sorted = List.sort_uniq compare neighbours_color in
     
     let endcolor l =
@@ -843,7 +850,7 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     in
     let clr = endcolor sorted in
     if (clr > (!biggestcolor)) then biggestcolor := clr;
-    UidM.add uid clr c
+    Datastructures.UidM.add uid clr c
   in
 
   let mapped = List.fold_left greedycoloring colors uid_list in
@@ -854,9 +861,27 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     ()
   ) mapped in 
   *)
-  let flag = ref false in
+
 
   let var_loc n x = 
+    if not !callflag then    
+    (if n > 10 && n < maxpossiblec then flag:=true;
+    match n with
+    | 0 -> Alloc.LReg (Rdi)
+    | 1 -> Alloc.LReg (Rsi)
+    | 2 -> Alloc.LReg (Rdx)
+    | 4 -> Alloc.LReg (R08)
+    | 5 -> Alloc.LReg (R09)
+    | 3 -> Alloc.LReg (R10)
+    | 6 -> Alloc.LReg (R11)
+    | 7 -> Alloc.LReg (R12)
+    | 8 -> Alloc.LReg (R13)
+    | 9 -> Alloc.LReg (R14)
+    | 10 -> Alloc.LReg (R15)
+    | 11 -> Alloc.LStk (-1)
+    | k when (k < maxpossiblec) -> Alloc.LStk (maxreg -2 - k)
+    | k -> Alloc.LStk (k-maxpossiblec+3))
+    else (
     if n > 6 && n < maxpossiblec then flag:=true;
     match n with
     | 0 -> Alloc.LReg (Rdi)
@@ -869,12 +894,12 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     | 7 -> Alloc.LStk (-1)
     (* last map should be maxreg -1 till here .... *)
     | k when (k < maxpossiblec) -> Alloc.LStk (maxreg -2 - k)
-    | k -> Alloc.LStk (k-maxpossiblec+3)
+    | k -> Alloc.LStk (k-maxpossiblec+3))
   in
 
   let allocate lo uid =
     let loc = 
-    let color = UidM.find uid mapped in
+    let color = Datastructures.UidM.find uid mapped in
       var_loc color uid
     in
       
