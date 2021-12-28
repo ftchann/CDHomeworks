@@ -1,7 +1,0 @@
-S util
-S x86
-S int64_overflow
-S simulator
-S .
-
-B _build/**
